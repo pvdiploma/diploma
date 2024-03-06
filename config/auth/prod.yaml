@@ -1,0 +1,5 @@
+env: "local"
+storage_path: "empty"
+grpc:
+  port: 8090
+  timeout: 5s
