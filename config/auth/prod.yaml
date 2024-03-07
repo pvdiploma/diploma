@@ -1,3 +1,4 @@
+service_name: "auth"
 env: "local"
 storage_path: "empty"
 grpc:
