@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 	authapp "tn/internal/app/authApp"
 	"tn/internal/config"
 	"tn/pkg/logger"
@@ -31,7 +34,14 @@ func run() error {
 
 	authApp := authapp.NewAuthApp(log, cfg.GRPC.Port)
 
-	authApp.Run()
+	go authApp.Run()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	sig := <-stop
+
+	log.Info("Stopping grpc auth server", slog.String("stop signal", sig.String()))
+	authApp.Stop()
 	return nil
 }
 
