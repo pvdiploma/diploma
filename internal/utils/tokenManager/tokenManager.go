@@ -4,22 +4,31 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"tn/internal/domain/models"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
-type Manager struct {
-	signingKey           []byte //super secret
+type TokenManager struct {
+	signingKey           []byte
 	AccessTokenLifeTime  time.Duration
 	RefreshTokenLifeTime time.Duration
 }
 
-func NewManager(signingKey []byte) *Manager {
-	return &Manager{
+func NewManager(signingKey []byte) *TokenManager {
+	return &TokenManager{
 		signingKey:           signingKey,
 		AccessTokenLifeTime:  time.Duration(1) * time.Minute,
 		RefreshTokenLifeTime: time.Duration(30) * time.Minute,
 	}
+}
+
+type Claims struct {
+	UserID int64  `json:"userID"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
+	Exp    int64  `json:"exp"`
+	jwt.StandardClaims
 }
 
 type TokenResponse struct {
@@ -27,7 +36,7 @@ type TokenResponse struct {
 	RefreshToken string `json:"resreshToken"`
 }
 
-func (m *Manager) IsValidJWT(tokenString string) (bool, error) {
+func (m *TokenManager) IsValidJWT(tokenString string) (bool, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid signing method")
@@ -51,17 +60,13 @@ func (m *Manager) IsValidJWT(tokenString string) (bool, error) {
 
 }
 
-func (m *Manager) GenerateNewJWTPair(refreshToken string, userID int64) (TokenResponse, error) {
-	if valid, err := m.IsValidJWT(refreshToken); err != nil || !valid {
-		return TokenResponse{}, err
-	}
-
-	newAccessToken, err := m.NewJWT(strconv.FormatInt(userID, 10))
+func (m *TokenManager) GenerateNewJWTPair(user models.User) (TokenResponse, error) {
+	newAccessToken, err := m.NewJWT(user, m.AccessTokenLifeTime)
 	if err != nil {
 		return TokenResponse{}, err
 	}
 
-	newRefreshToken, err := m.NewRefreshToken(strconv.FormatInt(userID, 10))
+	newRefreshToken, err := m.NewJWT(user, m.RefreshTokenLifeTime)
 	if err != nil {
 		return TokenResponse{}, err
 	}
@@ -69,21 +74,18 @@ func (m *Manager) GenerateNewJWTPair(refreshToken string, userID int64) (TokenRe
 	return TokenResponse{newAccessToken, newRefreshToken}, nil
 }
 
-func (m *Manager) NewJWT(userID string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(m.AccessTokenLifeTime).Unix(),
-		Subject:   userID,
-	})
+func (m *TokenManager) NewJWT(user models.User, duration time.Duration) (string, error) {
+	claims := Claims{
+		UserID: user.UUID,
+		Email:  user.Email,
+		Role:   strconv.Itoa(int(user.Role)),
+		Exp:    time.Now().Add(duration).Unix(),
 
+		StandardClaims: jwt.StandardClaims{},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// app sercet or common tokenManager secret???
 	return token.SignedString([]byte(m.signingKey))
-}
-
-func (m *Manager) NewRefreshToken(userID string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(m.RefreshTokenLifeTime).Unix(),
-		Subject:   userID,
-	})
-
-	return token.SignedString([]byte(m.signingKey))
-
 }
