@@ -1,8 +1,10 @@
-package auth
+package authgrpc
 
 import (
 	"context"
+	"errors"
 	"tn/internal/services/auth"
+	"tn/internal/storage"
 
 	ssov1 "github.com/pvdiploma/diploma-protos/gen/go/sso"
 	"google.golang.org/grpc"
@@ -10,12 +12,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type serverAPI struct {
-	ssov1.UnimplementedAuthServer
-	auth auth.Auth
+type Auth interface {
+	Login(ctx context.Context, email string, password string, appID int32) (tokenID string, err error)
+	Register(ctx context.Context, login string, email string, password string, role int32) (userID int64, err error)
+	IsOrginiser(ctx context.Context, userID int64) (bool, error)
+	IsDistributor(ctx context.Context, userID int64) (bool, error)
+	IsBuyer(ctx context.Context, userID int64) (bool, error)
+	IsAdmin(ctx context.Context, userID int64) (bool, error)
 }
 
-func Register(gRPC *grpc.Server, auth auth.Auth) {
+type serverAPI struct {
+	ssov1.UnimplementedAuthServer
+	auth Auth
+}
+
+func Register(gRPC *grpc.Server, auth Auth) {
 	ssov1.RegisterAuthServer(gRPC, &serverAPI{auth: auth})
 }
 
@@ -24,7 +35,9 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 
 	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword(), req.GetAppId())
 	if err != nil {
-		//TODO: ...
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -37,6 +50,9 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 
 	userId, err := s.auth.Register(ctx, req.GetLogin(), req.GetEmail(), req.GetPassword(), req.GetRole())
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user with this email arealady exists")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -51,6 +67,9 @@ func (s *serverAPI) IsOrginiser(ctx context.Context, req *ssov1.IsOrginiserReque
 	isOrginiser, err := s.auth.IsOrginiser(ctx, req.GetUserId())
 
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -65,6 +84,10 @@ func (s *serverAPI) IsDistributor(ctx context.Context, req *ssov1.IsDistributorR
 	isDistributor, err := s.auth.IsDistributor(ctx, req.GetUserId())
 
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -79,6 +102,10 @@ func (s *serverAPI) IsBuyer(ctx context.Context, req *ssov1.IsBuyerRequest) (*ss
 	isBuyer, err := s.auth.IsBuyer(ctx, req.GetUserId())
 
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -93,6 +120,10 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
 
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 

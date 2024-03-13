@@ -12,15 +12,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Auth interface {
-	Login(ctx context.Context, email string, password string, appID int32) (tokenID string, err error)
-	Register(ctx context.Context, login string, email string, password string, role int32) (userID int64, err error)
-	IsOrginiser(ctx context.Context, userID int64) (bool, error)
-	IsDistributor(ctx context.Context, userID int64) (bool, error)
-	IsBuyer(ctx context.Context, userID int64) (bool, error)
-	IsAdmin(ctx context.Context, userID int64) (bool, error)
-}
-
 type UserStorage interface {
 	SaveUser(ctx context.Context, login string, email string, pwdHash []byte, role int32) (uid int64, err error)
 }
@@ -39,6 +30,7 @@ type AppProvider interface {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrInvalidAppID       = errors.New("invalid appID")
 )
 
 type AuthService struct {
@@ -116,6 +108,10 @@ func (a *AuthService) Register(ctx context.Context, login string, email string, 
 
 	id, err := a.userStorage.SaveUser(ctx, login, email, pwdHash, role)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
+			a.log.Warn("user already exists", sl.Err(err))
+			return -1, ErrInvalidCredentials
+		}
 		a.log.Error(" saving user error", sl.Err(err))
 		return -1, err
 	}
@@ -128,6 +124,10 @@ func (a *AuthService) Register(ctx context.Context, login string, email string, 
 func (a *AuthService) IsOrginiser(ctx context.Context, userID int64) (bool, error) {
 	IsOrginiser, err := a.userProvider.IsOrginiser(ctx, userID)
 	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			a.log.Warn("app not found", sl.Err(err))
+			return false, ErrInvalidAppID
+		}
 		return false, err
 	}
 
@@ -138,6 +138,10 @@ func (a *AuthService) IsOrginiser(ctx context.Context, userID int64) (bool, erro
 func (a *AuthService) IsDistributor(ctx context.Context, userID int64) (bool, error) {
 	IsDistributor, err := a.userProvider.IsDistributor(ctx, userID)
 	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			a.log.Warn("app not found", sl.Err(err))
+			return false, ErrInvalidAppID
+		}
 		return false, err
 	}
 
@@ -148,6 +152,10 @@ func (a *AuthService) IsDistributor(ctx context.Context, userID int64) (bool, er
 func (a *AuthService) IsBuyer(ctx context.Context, userID int64) (bool, error) {
 	IsBuyer, err := a.userProvider.IsBuyer(ctx, userID)
 	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			a.log.Warn("app not found", sl.Err(err))
+			return false, ErrInvalidAppID
+		}
 		return false, err
 	}
 	a.log.Info("checking if user is buyer", slog.Int64("userID", userID), slog.Bool("isBuyer", IsBuyer))
@@ -157,6 +165,10 @@ func (a *AuthService) IsBuyer(ctx context.Context, userID int64) (bool, error) {
 func (a *AuthService) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	IsAdmin, err := a.userProvider.IsAdmin(ctx, userID)
 	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			a.log.Warn("app not found", sl.Err(err))
+			return false, ErrInvalidAppID
+		}
 		return false, err
 	}
 	a.log.Info("checking if user is admin", slog.Int64("userID", userID), slog.Bool("isAdmin", IsAdmin))
