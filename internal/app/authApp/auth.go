@@ -4,17 +4,31 @@ import (
 	"log/slog"
 	"tn/internal/app"
 	authgrpc "tn/internal/grpc/auth"
+	"tn/internal/services/auth"
+	"tn/internal/storage/postgresql"
 
 	"google.golang.org/grpc"
 )
 
-func NewAuthApp(log *slog.Logger, auth authgrpc.Auth, port int) *app.App {
+type AuthApp struct {
+	App *app.App
+}
 
-	// implement interface service
+func NewAuthApp(log *slog.Logger, port int, storagePath string) *AuthApp {
 
-	//start grpc server
+	storage, err := postgresql.NewStorage(storagePath)
+	if err != nil {
+		log.Error("Failed to create storage", err)
+		panic(err)
+	}
+
+	authService := auth.New(log, storage, storage, storage, nil)
+
 	gRPCServer := grpc.NewServer()
-	authgrpc.Register(gRPCServer, auth)
 
-	return app.NewApp(log, gRPCServer, port)
+	authgrpc.Register(gRPCServer, authService)
+
+	return &AuthApp{
+		App: app.NewApp(log, gRPCServer, port),
+	}
 }

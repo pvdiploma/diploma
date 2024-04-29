@@ -2,12 +2,14 @@ package postgresql
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"tn/internal/domain/models"
 	"tn/internal/storage"
 
 	"gorm.io/driver/postgres"
 
+	_ "github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -17,10 +19,19 @@ type Storage struct {
 
 func NewStorage(storagePath string) (*Storage, error) {
 
-	db, err := gorm.Open(postgres.Open(storagePath), &gorm.Config{})
+	dbSQL, err := sql.Open("postgres", storagePath)
 	if err != nil {
 		return nil, err
 	}
+
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: dbSQL,
+	}), &gorm.Config{})
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &Storage{db: db}, nil
 }
 
@@ -122,4 +133,16 @@ func (s *Storage) Update(ctx context.Context, user models.User) error {
 		return result.Error
 	}
 	return nil
+}
+
+func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
+	var app models.App
+	result := s.db.WithContext(ctx).Where("app_id = ?", appID).First(&app)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return app, storage.ErrAppNotFound
+		}
+		return app, result.Error
+	}
+	return app, nil
 }

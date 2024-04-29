@@ -31,17 +31,17 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// tm := tokenmanager.NewManager()
+	authApp := authapp.NewAuthApp(log, cfg.GRPC.Port, cfg.StoragePath)
 
-	authApp := authapp.NewAuthApp(log, cfg.GRPC.Port)
-
-	go authApp.Run()
+	go authApp.App.Run()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	sig := <-stop
 
 	log.Info("Stopping grpc auth server", slog.String("stop signal", sig.String()))
-	authApp.Stop()
+	authApp.App.Stop()
 	return nil
 }
 

@@ -47,7 +47,8 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 }
 
 func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*ssov1.RegisterResponse, error) {
-
+	print("abobar")
+	print(req.GetEmail())
 	userId, err := s.auth.Register(ctx, req.GetLogin(), req.GetEmail(), req.GetPassword(), req.GetRole())
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS app (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    sevret TEXT NOT NULL
+    secret TEXT NOT NULL
 );
 
 CREATE TABLE roles (
@@ -12,9 +12,8 @@ CREATE TABLE roles (
 INSERT INTO roles VALUES (0, 'admin'), (1, 'orginizer'), (2, 'distributor'), (3, 'buyer');
 
 
-CREATE TABLE IF NOT EXISTS users
-(
-    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS users (
+    id       SERIAL PRIMARY KEY,
     login    TEXT NOT NULL,
     email    TEXT UNIQUE NOT NULL,
     pass_hash bytea NOT NULL,
@@ -22,4 +21,3 @@ CREATE TABLE IF NOT EXISTS users
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
-

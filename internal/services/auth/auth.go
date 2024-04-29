@@ -96,7 +96,7 @@ func (a *AuthService) Login(ctx context.Context, email string, password string, 
 	return tokens.AccessToken, nil
 }
 
-func (a *AuthService) Register(ctx context.Context, login string, email string, password string, role int32, appID int32) (int64, error) {
+func (a *AuthService) Register(ctx context.Context, login string, email string, password string, role int32) (int64, error) {
 
 	pwdHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
@@ -116,8 +116,6 @@ func (a *AuthService) Register(ctx context.Context, login string, email string, 
 		return -1, err
 	}
 
-	// call login??
-	_, err = a.Login(ctx, email, password, appID)
 	return id, nil
 }
 
