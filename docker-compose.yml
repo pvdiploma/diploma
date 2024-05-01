@@ -1,0 +1,37 @@
+version: '3'
+services:    
+  dependencies:
+    container_name: dependencies
+    build: .
+    image: base  
+    command: tail -f /dev/null
+  db:
+    container_name: postgres_ticketnest_db
+    image: postgres:16.0
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ticketnest_db
+    healthcheck:
+      test: "pg_isready --username=postgres && psql --username=postgres --list"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+  auth:
+    container_name: auth-service
+    build: 
+      context: ./cmd/auth
+      dockerfile: Dockerfile
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "8090:8090"
+    depends_on:
+      db:
+        condition: service_healthy
+      dependencies:
+        condition: service_started

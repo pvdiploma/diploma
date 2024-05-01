@@ -1,5 +1,6 @@
+service_name: "auth"
 env: "local"
-storage_path: "empty"
+storage_path: "postgres://postgres:postgres@db:5432/ticketnest_db?sslmode=disable"
 grpc:
   port: 8090
   timeout: 5s
