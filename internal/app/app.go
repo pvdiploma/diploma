@@ -30,7 +30,7 @@ func (a *App) Run() error {
 		return err
 	}
 
-	log.Info("Starting grpc auth server", slog.String("addr", l.Addr().String()))
+	log.Info("Starting grpc server", slog.String("addr", l.Addr().String()))
 
 	if err := a.grpc.Serve(l); err != nil {
 		return err
@@ -40,7 +40,7 @@ func (a *App) Run() error {
 }
 
 func (a *App) Stop() error {
-	a.log.Info("Stopping grpc auth server", slog.Int("addr", a.port))
+	a.log.Info("Stopping grpc server", slog.Int("addr", a.port))
 	a.grpc.GracefulStop()
 	return nil
 }

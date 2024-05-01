@@ -31,7 +31,6 @@ func Register(gRPC *grpc.Server, auth Auth) {
 }
 
 func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.LoginResponse, error) {
-	//TODO: validate data
 
 	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword(), req.GetAppId())
 	if err != nil {

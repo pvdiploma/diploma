@@ -8,6 +8,7 @@ import (
 	"syscall"
 	authapp "tn/internal/app/authApp"
 	"tn/internal/config"
+	tokenmanager "tn/internal/utils/tokenManager"
 	"tn/pkg/logger"
 
 	"github.com/joho/godotenv"
@@ -27,12 +28,14 @@ func run() error {
 	}
 
 	log, err := logger.SetupLogger(cfg)
-
 	if err != nil {
 		return err
 	}
-	// tm := tokenmanager.NewManager()
-	authApp := authapp.NewAuthApp(log, cfg.GRPC.Port, cfg.StoragePath)
+
+	singingKey := []byte(os.Getenv("SINGING_KEY"))
+
+	tm := tokenmanager.NewManager(singingKey)
+	authApp := authapp.NewAuthApp(log, cfg.GRPC.Port, cfg.StoragePath, tm)
 
 	go authApp.App.Run()
 	stop := make(chan os.Signal, 1)

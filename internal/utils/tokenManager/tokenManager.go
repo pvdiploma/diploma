@@ -76,7 +76,7 @@ func (m *TokenManager) GenerateNewJWTPair(user models.User) (TokenResponse, erro
 
 func (m *TokenManager) NewJWT(user models.User, duration time.Duration) (string, error) {
 	claims := Claims{
-		UserID: user.UUID,
+		UserID: user.Id,
 		Email:  user.Email,
 		Role:   strconv.Itoa(int(user.Role)),
 		Exp:    time.Now().Add(duration).Unix(),

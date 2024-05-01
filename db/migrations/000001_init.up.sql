@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS app (
+CREATE TABLE IF NOT EXISTS apps (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     secret TEXT NOT NULL
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     id       SERIAL PRIMARY KEY,
     login    TEXT NOT NULL,
     email    TEXT UNIQUE NOT NULL,
-    pass_hash bytea NOT NULL,
+    pwd_hash bytea NOT NULL,
     role     INTEGER REFERENCES roles (role_id) NOT NULL
 );
 

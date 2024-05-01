@@ -1,0 +1,1 @@
+INSERT INTO apps (name, secret) VALUES ('auth_app', 'auth_app_secret'), ('orginizer_app', 'orginizer_app_secret');

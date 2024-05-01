@@ -41,7 +41,6 @@ type AuthService struct {
 	tokenManager *tokenmanager.TokenManager
 }
 
-// New return an instance of auth service
 func New(
 	log *slog.Logger,
 	userStorage UserStorage,
@@ -77,12 +76,13 @@ func (a *AuthService) Login(ctx context.Context, email string, password string, 
 		return "", ErrInvalidCredentials
 	}
 
-	app, err := a.appProvider.App(ctx, appID)
-	if err != nil {
-		a.log.Warn("app not found", sl.Err(err))
-		return "", err
-	}
-	_ = app
+	// NOTE: get rid of app
+	// app, err := a.appProvider.App(ctx, appID)
+	// if err != nil {
+	// 	a.log.Warn("app not found", sl.Err(err))
+	// 	return "", err
+	// }
+	// _ = app
 
 	tokens, err := a.tokenManager.GenerateNewJWTPair(user)
 

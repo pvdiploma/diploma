@@ -6,6 +6,7 @@ import (
 	authgrpc "tn/internal/grpc/auth"
 	"tn/internal/services/auth"
 	"tn/internal/storage/postgresql"
+	tokenmanager "tn/internal/utils/tokenManager"
 
 	"google.golang.org/grpc"
 )
@@ -14,7 +15,7 @@ type AuthApp struct {
 	App *app.App
 }
 
-func NewAuthApp(log *slog.Logger, port int, storagePath string) *AuthApp {
+func NewAuthApp(log *slog.Logger, port int, storagePath string, tm *tokenmanager.TokenManager) *AuthApp {
 
 	storage, err := postgresql.NewStorage(storagePath)
 	if err != nil {
@@ -22,7 +23,7 @@ func NewAuthApp(log *slog.Logger, port int, storagePath string) *AuthApp {
 		panic(err)
 	}
 
-	authService := auth.New(log, storage, storage, storage, nil)
+	authService := auth.New(log, storage, storage, storage, tm)
 
 	gRPCServer := grpc.NewServer()
 

@@ -59,7 +59,7 @@ func (s *Storage) SaveUser(ctx context.Context, login string, email string, pwdH
 		return -1, result.Error
 	}
 	// добавить вызовы создания в других микросерввисах
-	return user.UUID, nil
+	return user.Id, nil
 
 }
 
@@ -76,7 +76,6 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	return user, nil
 }
 
-// too much duplicate code?
 func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	user, err := s.FindByID(ctx, userID)
 	if err != nil {
@@ -111,10 +110,9 @@ func (s *Storage) IsBuyer(ctx context.Context, userID int64) (bool, error) {
 	return user.Role == 3, nil
 }
 
-// Будет ли рабоать с интефейсом???
 func (s *Storage) FindByID(ctx context.Context, userID int64) (models.User, error) {
 	var user models.User
-	result := s.db.WithContext(ctx).Where("uuid = ?", userID).First(&user)
+	result := s.db.WithContext(ctx).Where("id = ?", userID).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return user, storage.ErrUserNotFound
@@ -137,7 +135,7 @@ func (s *Storage) Update(ctx context.Context, user models.User) error {
 
 func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
 	var app models.App
-	result := s.db.WithContext(ctx).Where("app_id = ?", appID).First(&app)
+	result := s.db.WithContext(ctx).Where("id = ?", appID).First(&app)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return app, storage.ErrAppNotFound
