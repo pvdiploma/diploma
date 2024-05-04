@@ -9,7 +9,7 @@ CREATE TABLE roles (
     description varchar(32) UNIQUE NOT NULL
 );
 
-INSERT INTO roles VALUES (0, 'admin'), (1, 'orginizer'), (2, 'distributor'), (3, 'buyer');
+INSERT INTO roles VALUES (0, 'admin'), (1, 'organizer'), (2, 'distributor'), (3, 'buyer');
 
 
 CREATE TABLE IF NOT EXISTS users (

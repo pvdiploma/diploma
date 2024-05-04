@@ -11,6 +11,7 @@ type Config struct {
 	ServiceName string `yaml:"service_name" env-required:"true"`
 	Env         string `yaml:"env" env-required:"true"`
 	StoragePath string `yaml:"storage_path" env-required:"true"`
+	RedisPath   string `yaml:"redis_path"`
 	GRPC        GRPC   `yaml:"grpc"`
 }
 

@@ -1,7 +1,7 @@
-service_name: "auth"
+service_name: "event"
 env: "local"
 storage_path: "postgres://postgres:postgres@db:5432/ticketnest_db?sslmode=disable"
-redis_path: ""
+redis_path: "redis://redis:6379"
 grpc:
   port: 8090
-  timeout: 5s
+  timeout: 10h
