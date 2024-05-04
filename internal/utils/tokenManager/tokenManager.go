@@ -2,7 +2,6 @@ package tokenmanager
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 	"tn/internal/domain/models"
 
@@ -26,7 +25,7 @@ func NewManager(signingKey []byte) *TokenManager {
 type Claims struct {
 	UserID int64  `json:"userID"`
 	Email  string `json:"email"`
-	Role   string `json:"role"`
+	Role   int32  `json:"role"`
 	Exp    int64  `json:"exp"`
 	jwt.StandardClaims
 }
@@ -36,6 +35,39 @@ type TokenResponse struct {
 	RefreshToken string `json:"resreshToken"`
 }
 
+// refactror???
+func (m *TokenManager) ParseToken(tokenString string) (*jwt.Token, error) {
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("invalid signing method")
+		}
+		return m.signingKey, nil
+	})
+}
+
+func (m *TokenManager) IsOrganizer(tokenStr string) (bool, int64) {
+	token, err := m.ParseToken(tokenStr)
+
+	if err != nil {
+		return false, -1
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		expirationTime := time.Unix(int64(claims["exp"].(float64)), 0)
+		if time.Now().After(expirationTime) {
+			return false, -1
+		}
+		if claims["role"] != 1 { // create const for types of users
+			return false, -1
+		}
+
+		return true, claims["userID"].(int64)
+	}
+
+	return false, -1
+}
+
+// TODO: refactor later
 func (m *TokenManager) IsValidJWT(tokenString string) (bool, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -78,7 +110,7 @@ func (m *TokenManager) NewJWT(user models.User, duration time.Duration) (string,
 	claims := Claims{
 		UserID: user.Id,
 		Email:  user.Email,
-		Role:   strconv.Itoa(int(user.Role)),
+		Role:   user.Role,
 		Exp:    time.Now().Add(duration).Unix(),
 
 		StandardClaims: jwt.StandardClaims{},
