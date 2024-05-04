@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"tn/internal/app"
 	eventgrpc "tn/internal/grpc/event"
+	"tn/internal/services/event"
 	"tn/internal/storage/postgresql"
 	tokenmanager "tn/internal/utils/tokenManager"
 
@@ -21,15 +22,13 @@ func NewEventApp(log *slog.Logger, port int, storagePath string, redisPath strin
 		log.Error("Failed to create storage", err)
 		panic(err)
 	}
-	_ = storage
-	// connect to redis
+	// connect to redis (later)
 
-	// eventService :=
+	eventService := event.New(log, storage, storage.DB())
 
 	gRPCServer := grpc.NewServer()
-	// implement event grpc layer
 
-	eventgrpc.Register(gRPCServer, nil, tm)
+	eventgrpc.Register(gRPCServer, eventService, tm)
 	return &EventApp{
 		App: app.NewApp(log, gRPCServer, port),
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 	"tn/internal/domain/models"
 	"tn/internal/storage"
 
@@ -35,6 +36,10 @@ func NewStorage(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+func (s *Storage) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *Storage) Close() error {
 	sqlDB, err := s.db.DB()
 	if err != nil {
@@ -58,7 +63,6 @@ func (s *Storage) SaveUser(ctx context.Context, login string, email string, pwdH
 		}
 		return -1, result.Error
 	}
-	// добавить вызовы создания в других микросерввисах
 	return user.Id, nil
 
 }
@@ -143,4 +147,124 @@ func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
 		return app, result.Error
 	}
 	return app, nil
+}
+
+func (s *Storage) SaveEvent(ctx context.Context, event models.Event) (int64, error) {
+	result := s.db.WithContext(ctx).Omit("categories").Create(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return -1, storage.ErrEventExists
+		}
+		return -1, result.Error
+	}
+	return event.ID, nil
+}
+
+func (s *Storage) SaveEventCategory(ctx context.Context, event models.EventCategory) (int64, error) {
+	result := s.db.WithContext(ctx).Create(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return -1, storage.ErrEventExists
+		}
+		return -1, result.Error
+	}
+	return event.ID, nil
+}
+
+func (s *Storage) UpdateEvent(ctx context.Context, event models.Event, omits []string) (int64, error) {
+	result := s.db.WithContext(ctx).Where("id = ?", event.ID).Omit(omits...).Updates(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrEventNotFound
+		}
+		return -1, result.Error
+	}
+	return event.ID, nil
+}
+
+func (s *Storage) UpdateEventCategory(ctx context.Context, EventCategory models.EventCategory, omits ...string) (int64, error) {
+
+	result := s.db.WithContext(ctx).Where("id = ?", EventCategory.ID).Omit(omits...).Updates(&EventCategory)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrEventNotFound
+		}
+		return -1, result.Error
+	}
+	return EventCategory.ID, nil
+}
+
+func (s *Storage) DeleteEvent(ctx context.Context, eventID int64) (int64, error) {
+	result := s.db.WithContext(ctx).Delete(&models.Event{}, eventID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrEventNotFound
+		}
+		return -1, result.Error
+	}
+	return eventID, nil
+}
+
+func (s *Storage) DeleteEventCategory(ctx context.Context, eventID int64) (int64, error) {
+
+	result := s.db.WithContext(ctx).Delete(&models.EventCategory{}, eventID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrEventNotFound
+		}
+		return -1, result.Error
+	}
+	return eventID, nil
+
+}
+
+func (s *Storage) GetEvent(ctx context.Context, eventID int64) (models.Event, error) {
+	var event models.Event
+	result := s.db.WithContext(ctx).Where("id = ?", eventID).First(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return event, storage.ErrEventNotFound
+		}
+		return event, result.Error
+	}
+	return event, nil
+}
+
+func (s *Storage) GetEventCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error) {
+
+	var eventCategory []models.EventCategory
+	result := s.db.WithContext(ctx).Where("event_id = ?", eventID).Find(&eventCategory)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return eventCategory, storage.ErrEventNotFound
+		}
+		return eventCategory, result.Error
+	}
+	return eventCategory, nil
+}
+
+func (s *Storage) GetAllEvents(ctx context.Context) ([]models.Event, error) {
+
+	var events []models.Event
+	result := s.db.WithContext(ctx).Find(&events)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return events, storage.ErrEventNotFound
+		}
+		return events, result.Error
+	}
+	return events, nil
+}
+
+func (s *Storage) GetPrevEvents(ctx context.Context) ([]models.Event, error) {
+	now := time.Now()
+	var events []models.Event
+	result := s.db.WithContext(ctx).Where("date < ?", now).Find(events)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, storage.ErrEventNotFound
+		}
+		return nil, result.Error
+	}
+	return events, nil
 }

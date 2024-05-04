@@ -9,3 +9,9 @@ var (
 	ErrEventNotFound = errors.New("event not found")
 	ErrEventExists   = errors.New("event already exist")
 )
+
+// implement that in proto files
+const (
+	DefaultEmptyInt = -1
+	DefaultEmptyStr = "None"
+)
