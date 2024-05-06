@@ -61,3 +61,17 @@ services:
         condition: service_healthy
       dependencies:
         condition: service_started
+  ticket:
+    container_name: ticket-service
+    build: 
+      context: ./cmd/ticket
+      dockerfile: Dockerfile
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "8092:8090"
+    depends_on:
+      db:
+        condition: service_healthy
+      dependencies:
+        condition: service_started

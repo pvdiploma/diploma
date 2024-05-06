@@ -12,6 +12,6 @@ var (
 
 // implement that in proto files
 const (
-	DefaultEmptyInt = -1
+	DefaultEmptyInt = 0 // change to -1 after fixing proto
 	DefaultEmptyStr = "None"
 )
