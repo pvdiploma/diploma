@@ -68,6 +68,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./logs:/app/logs
+      - ./images:/app/images
     ports:
       - "8092:8090"
     depends_on:

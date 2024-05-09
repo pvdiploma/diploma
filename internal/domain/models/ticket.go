@@ -11,5 +11,5 @@ type Ticket struct {
 	Total           uint32
 	QRCode          []byte
 	IsActivated     bool
-	ImageBytes      []byte
+	ImagePath       string
 }
