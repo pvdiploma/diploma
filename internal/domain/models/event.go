@@ -10,6 +10,7 @@ type Event struct {
 	Country      string
 	City         string
 	Place        string
+	Address      string
 	Date         time.Time
 	TicketAmount uint32
 	Age          string

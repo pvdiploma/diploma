@@ -12,8 +12,7 @@ var (
 	ErrTicketNotFound = errors.New("ticket not found")
 )
 
-// implement that in proto files
 const (
-	DefaultEmptyInt = 0 // change to -1 after fixing proto
+	DefaultEmptyInt = 0
 	DefaultEmptyStr = ""
 )

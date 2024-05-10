@@ -43,6 +43,7 @@ func ModelEventToProto(event models.Event) *eventv1.Event {
 		Country:      event.Country,
 		City:         event.City,
 		Place:        event.Place,
+		Address:      event.Address,
 		Date:         timestamppb.New(event.Date),
 		TicketAmount: event.TicketAmount,
 		Age:          event.Age,

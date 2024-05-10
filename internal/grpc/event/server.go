@@ -152,6 +152,21 @@ func (s *serverAPI) GetEvent(ctx context.Context, req *eventv1.GetEventRequest) 
 	}, nil
 }
 
+func (s *serverAPI) GetEventByCategoryId(ctx context.Context, req *eventv1.GetEventByCategoryIdRequest) (*eventv1.GetEventByCategoryIdResponse, error) {
+
+	event, err := s.event.GetEvent(ctx, req.GetEventCategoryId())
+	if err != nil {
+		if errors.Is(err, storage.ErrEventNotFound) {
+			return nil, status.Error(codes.NotFound, "event not found")
+		}
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &eventv1.GetEventByCategoryIdResponse{
+		Event: converter.ModelEventToProto(event),
+	}, nil
+}
+
 func (s *serverAPI) GetAllEvents(ctx context.Context, req *eventv1.GetAllEventsRequest) (*eventv1.GetAllEventsResponse, error) {
 	events, err := s.event.GetAllEvents(ctx)
 	if err != nil {

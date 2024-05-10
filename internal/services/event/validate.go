@@ -47,11 +47,6 @@ func GetEventOmitFields(event models.Event) []string {
 	if event.Date.IsZero() {
 		omits = append(omits, "date")
 	}
-
-	if event.TicketAmount == storage.DefaultEmptyInt {
-		omits = append(omits, "ticket_amount")
-	}
-
 	if event.Age == storage.DefaultEmptyStr {
 		omits = append(omits, "age")
 	}
