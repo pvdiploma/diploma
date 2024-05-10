@@ -22,7 +22,7 @@ func NewTicketApp(log *slog.Logger, port int, storagePath string, tm *tokenmanag
 		log.Error("Failed to create storage", err)
 		panic(err)
 	}
-	ticketService := ticket.New(log, storage)
+	ticketService := ticket.New(log, storage, eventClient)
 
 	gRPCServer := grpc.NewServer()
 
