@@ -96,6 +96,21 @@ func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, na
 		s.log.Error("Failed to save ticket", sl.Err(err))
 		return -1, nil
 	}
+
+	for _, category := range event.Categories {
+		if category.ID == eventCategory.ID { // is right?
+			category.Amount--
+		}
+	}
+	event.TicketAmount--
+
+	_, err = s.EventClient.UpdateTicketAmount(ctx, event)
+
+	if err != nil {
+		s.log.Error("Failed to update event", sl.Err(err))
+		return -1, err
+	}
+
 	return id, nil
 }
 

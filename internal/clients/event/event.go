@@ -61,28 +61,42 @@ func NewClient(
 	}, nil
 }
 
-func (s *Client) GetEvent(ctx context.Context, eventID int64) (models.Event, error) {
+func (c *Client) GetEvent(ctx context.Context, eventID int64) (models.Event, error) {
 	var event models.Event
-	resp, err := s.api.GetEvent(ctx, &eventv1.GetEventRequest{EventId: eventID})
+	resp, err := c.api.GetEvent(ctx, &eventv1.GetEventRequest{EventId: eventID})
 	if err != nil {
-		s.log.Error("Failed to get event", sl.Err(err))
+		c.log.Error("Failed to get event", sl.Err(err))
 		return models.Event{}, err
 	}
 	event = converter.ProtoEventToModel(resp.Event) // check resp.GetEvent()
 	return event, nil
 }
 
-func (s *Client) GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error) {
+func (c *Client) GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error) {
 	var event models.Event
-	resp, err := s.api.GetEventByCategoryId(ctx, &eventv1.GetEventByCategoryIdRequest{EventCategoryId: eventCategoryID})
+	resp, err := c.api.GetEventByCategoryId(ctx, &eventv1.GetEventByCategoryIdRequest{EventCategoryId: eventCategoryID})
 	if err != nil {
-		s.log.Error("Failed to get event", sl.Err(err))
+		c.log.Error("Failed to get event", sl.Err(err))
 		return models.Event{}, err
 	}
 	event = converter.ProtoEventToModel(resp.Event)
 	return event, nil
 }
 
+func (c *Client) UpdateTicketAmount(ctx context.Context, event models.Event) (int64, error) {
+
+	resp, err := c.api.UpdateEvent(ctx, &eventv1.UpdateEventRequest{
+		EventId:      event.ID,
+		TicketAmount: event.TicketAmount,
+		Categories:   converter.ModelCategoryToProto(event.Categories),
+	})
+	if err != nil {
+		c.log.Error("Failed to update event", sl.Err(err))
+		return -1, err
+	}
+	return resp.EventId, nil
+
+}
 func InterceptorLogger(s *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, level grpclog.Level, msg string, fields ...any) {
 		s.Log(ctx, slog.Level(level), msg, fields...)
