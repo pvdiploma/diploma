@@ -3,6 +3,7 @@ package ticket
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	eventclient "tn/internal/clients/event"
 	"tn/internal/domain/models"
@@ -53,14 +54,10 @@ func GenerateImage(ticket models.Ticket, event models.Event, eventCategory model
 	}, nil
 }
 
-func (s *TicketService) AddTicket(ctx context.Context, event_category_id int64, name string, surname string, patronymic string, discount uint32, email string) (int64, error) {
-	// в общем:
-	// 1) сначала поиск EventCategory, потом по id event поиск event - получаем все нужные данные
-	// or 2) Пройти forом по Event и найти нужную категория по id
-	// вопрос как лучше. Внутренний фор явно быстрее вызова во внешний сервис.
-	// aboba
+func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, name string, surname string, patronymic string, discount uint32, email string) (int64, error) {
+	//НУЖНА ЛИ ТУТ ТРАНЗАКЦИЯ????
 
-	event, err := s.EventClient.GetEvent(ctx, event_category_id) // use GetEventByCategoryID instead of GetEvent
+	event, err := s.EventClient.GetEventByCategoryId(ctx, eventCategoryID)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			return -1, storage.ErrEventNotFound
@@ -68,9 +65,14 @@ func (s *TicketService) AddTicket(ctx context.Context, event_category_id int64, 
 		return -1, err
 	}
 
-	eventCategory := models.EventCategory{}
+	eventCategory, err := exctractEventCategory(eventCategoryID, event)
+
+	if err != nil {
+		return -1, err
+	}
+
 	ticket := models.Ticket{
-		EventCategoryID: event_category_id,
+		EventCategoryID: eventCategoryID,
 		Name:            name,
 		Surname:         surname,
 		Patronymic:      patronymic,
@@ -129,4 +131,14 @@ func (s *TicketService) IsActivated(ctx context.Context, ticketID int64) (bool, 
 	}
 
 	return ticket.IsActivated, nil
+}
+
+func exctractEventCategory(eventCategoryId int64, event models.Event) (models.EventCategory, error) {
+
+	for _, eventCategory := range event.Categories {
+		if eventCategory.ID == eventCategoryId {
+			return eventCategory, nil
+		}
+	}
+	return models.EventCategory{}, fmt.Errorf("event category with id %d not found", eventCategoryId)
 }
