@@ -49,3 +49,18 @@ func ModelEventToProto(event models.Event) *eventv1.Event {
 		Categories:   ModelCategoryToProto(event.Categories),
 	}
 }
+
+func ProtoEventToModel(event *eventv1.Event) models.Event {
+	return models.Event{
+		ID:           event.GetEventId(),
+		OwnerID:      event.GetOwnerId(),
+		Name:         event.GetName(),
+		Country:      event.GetCountry(),
+		City:         event.GetCity(),
+		Place:        event.GetPlace(),
+		Date:         event.GetDate().AsTime(),
+		TicketAmount: event.GetTicketAmount(),
+		Age:          event.GetAge(),
+		Categories:   ProtoCategoryToModels(event.GetCategories()),
+	}
+}

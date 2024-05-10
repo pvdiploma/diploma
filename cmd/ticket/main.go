@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	ticketapp "tn/internal/app/ticketApp"
+	eventclient "tn/internal/clients/event"
 	"tn/internal/config"
+	tokenmanager "tn/internal/utils/tokenManager"
 	"tn/pkg/logger"
 
 	"github.com/joho/godotenv"
@@ -27,19 +34,28 @@ func run() error {
 		return err
 	}
 	_ = log
-	// singingKey := []byte(os.Getenv("SINGING_KEY"))
+	singingKey := []byte(os.Getenv("SINGING_KEY"))
 
-	// tm := tokenmanager.NewManager(singingKey)
-	// eventApp := eventapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, cfg.RedisPath, tm)
+	tm := tokenmanager.NewManager(singingKey)
 
-	// go eventApp.App.Run()
-	// stop := make(chan os.Signal, 1)
-	// signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	eventClient, err := eventclient.NewClient(
+		context.Background(),
+		log,
+		cfg.Clients.Event.Addres,
+		cfg.Clients.Event.Timeout,
+		cfg.Clients.Event.RetriesCount,
+	)
 
-	// sig := <-stop
+	ticketapp := ticketapp.NewTicketApp(log, cfg.GRPC.Port, cfg.StoragePath, tm, eventClient)
 
-	// log.Info("Stopping grpc auth server", slog.String("stop signal", sig.String()))
-	// eventApp.App.Stop()
+	go ticketapp.App.Run()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	sig := <-stop
+
+	log.Info("Stopping grpc auth server", slog.String("stop signal", sig.String()))
+	ticketapp.App.Stop()
 	return nil
 
 }
