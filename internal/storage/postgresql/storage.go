@@ -268,3 +268,63 @@ func (s *Storage) GetPrevEvents(ctx context.Context) ([]models.Event, error) {
 	}
 	return events, nil
 }
+
+func (s *Storage) SaveTicket(ctx context.Context, ticket models.Ticket) (int64, error) {
+	result := s.db.WithContext(ctx).Create(&ticket)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return -1, storage.ErrTicketExists
+		}
+		return -1, result.Error
+	}
+	return ticket.ID, nil
+}
+
+func (s *Storage) DeleteTicket(ctx context.Context, ticketID int64) (int64, error) {
+
+	result := s.db.WithContext(ctx).Delete(&models.Ticket{}, ticketID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrTicketNotFound
+		}
+		return -1, result.Error
+	}
+	return ticketID, nil
+}
+
+func (s *Storage) GetTicket(ctx context.Context, ticketID int64) (models.Ticket, error) {
+
+	var ticket models.Ticket
+	result := s.db.WithContext(ctx).Where("id = ?", ticketID).First(&ticket)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return ticket, storage.ErrTicketNotFound
+		}
+		return ticket, result.Error
+	}
+	return ticket, nil
+}
+
+func (s *Storage) GetTicketByEmail(ctx context.Context, email string) (models.Ticket, error) {
+
+	var ticket models.Ticket
+	result := s.db.WithContext(ctx).Where("email = ?", email).First(&ticket)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return ticket, storage.ErrTicketNotFound
+		}
+		return ticket, result.Error
+	}
+	return ticket, nil
+}
+
+func (s *Storage) ActivateTicket(ctx context.Context, ticketId int64) (int64, error) {
+	result := s.db.WithContext(ctx).Model(&models.Ticket{}).Where("id = ?", ticketId).Update("is_activated", true)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrTicketNotFound
+		}
+		return -1, result.Error
+	}
+	return ticketId, nil
+}
