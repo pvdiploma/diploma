@@ -152,9 +152,7 @@ func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
 }
 
 func (s *Storage) SaveEvent(ctx context.Context, event models.Event, tx *gorm.DB) (int64, error) {
-	fmt.Println("event", event)
 	result := tx.WithContext(ctx).Omit("Categories").Create(&event)
-	// result := s.db.WithContext(ctx).Omit("Categories").Create(&event)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 			return -1, storage.ErrEventExists
@@ -165,10 +163,8 @@ func (s *Storage) SaveEvent(ctx context.Context, event models.Event, tx *gorm.DB
 }
 
 func (s *Storage) SaveEventCategory(ctx context.Context, eventCategory models.EventCategory, tx *gorm.DB) (int64, error) {
-	fmt.Printf("event category%v\n", eventCategory)
 	// result := s.db.WithContext(ctx).Create(&eventCategory)
 	result := tx.WithContext(ctx).Create(&eventCategory)
-	fmt.Println(result)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 			return -1, storage.ErrEventExists
@@ -178,8 +174,8 @@ func (s *Storage) SaveEventCategory(ctx context.Context, eventCategory models.Ev
 	return eventCategory.ID, nil
 }
 
-func (s *Storage) UpdateEvent(ctx context.Context, event models.Event, omits []string) (int64, error) {
-	result := s.db.WithContext(ctx).Where("id = ?", event.ID).Omit(omits...).Updates(&event)
+func (s *Storage) UpdateEvent(ctx context.Context, tx *gorm.DB, event models.Event, omits []string) (int64, error) {
+	result := tx.WithContext(ctx).Where("id = ?", event.ID).Omit(omits...).Updates(&event)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return -1, storage.ErrEventNotFound
@@ -189,9 +185,9 @@ func (s *Storage) UpdateEvent(ctx context.Context, event models.Event, omits []s
 	return event.ID, nil
 }
 
-func (s *Storage) UpdateEventCategory(ctx context.Context, EventCategory models.EventCategory, omits ...string) (int64, error) {
+func (s *Storage) UpdateEventCategory(ctx context.Context, tx *gorm.DB, EventCategory models.EventCategory, omits ...string) (int64, error) {
 
-	result := s.db.WithContext(ctx).Where("id = ?", EventCategory.ID).Omit(omits...).Updates(&EventCategory)
+	result := tx.WithContext(ctx).Where("id = ?", EventCategory.ID).Omit(omits...).Updates(&EventCategory)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return -1, storage.ErrEventNotFound
@@ -201,8 +197,8 @@ func (s *Storage) UpdateEventCategory(ctx context.Context, EventCategory models.
 	return EventCategory.ID, nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, eventID int64) (int64, error) {
-	result := s.db.WithContext(ctx).Delete(&models.Event{}, eventID)
+func (s *Storage) DeleteEvent(ctx context.Context, tx *gorm.DB, eventID int64) (int64, error) {
+	result := tx.WithContext(ctx).Delete(&models.Event{}, eventID)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return -1, storage.ErrEventNotFound
@@ -212,9 +208,9 @@ func (s *Storage) DeleteEvent(ctx context.Context, eventID int64) (int64, error)
 	return eventID, nil
 }
 
-func (s *Storage) DeleteEventCategory(ctx context.Context, eventID int64) (int64, error) {
+func (s *Storage) DeleteEventCategory(ctx context.Context, tx *gorm.DB, eventID int64) (int64, error) {
 
-	result := s.db.WithContext(ctx).Delete(&models.EventCategory{}, eventID)
+	result := tx.WithContext(ctx).Delete(&models.EventCategory{}, eventID)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return -1, storage.ErrEventNotFound

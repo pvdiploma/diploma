@@ -17,11 +17,11 @@ type EventStorage interface {
 	SaveEvent(ctx context.Context, event models.Event, tx *gorm.DB) (int64, error)
 	SaveEventCategory(ctx context.Context, event models.EventCategory, tx *gorm.DB) (int64, error)
 
-	UpdateEvent(ctx context.Context, event models.Event, omits []string) (int64, error)
-	UpdateEventCategory(ctx context.Context, event models.EventCategory, omits ...string) (int64, error)
+	UpdateEvent(ctx context.Context, tx *gorm.DB, event models.Event, omits []string) (int64, error)
+	UpdateEventCategory(ctx context.Context, tx *gorm.DB, event models.EventCategory, omits ...string) (int64, error)
 
-	DeleteEvent(ctx context.Context, eventID int64) (int64, error)
-	DeleteEventCategory(ctx context.Context, eventID int64) (int64, error)
+	DeleteEvent(ctx context.Context, tx *gorm.DB, eventID int64) (int64, error)
+	DeleteEventCategory(ctx context.Context, tx *gorm.DB, eventID int64) (int64, error)
 
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
 	GetEventCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error)
@@ -104,7 +104,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) (int
 	}
 
 	eventOmits := GetEventOmitFields(event)
-	_, err := s.EventStorage.UpdateEvent(ctx, event, eventOmits)
+	_, err := s.EventStorage.UpdateEvent(ctx, tx, event, eventOmits)
 	if err != nil {
 		tx.Rollback()
 		s.log.Error("Failed to update event", sl.Err(err))
@@ -113,7 +113,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) (int
 
 	for i := range event.Categories {
 		categoryOmits := GetEventCategoryOmitFields(event.Categories[i])
-		_, err := s.EventStorage.UpdateEventCategory(ctx, event.Categories[i], categoryOmits...)
+		_, err := s.EventStorage.UpdateEventCategory(ctx, tx, event.Categories[i], categoryOmits...)
 		if err != nil {
 			tx.Rollback()
 			s.log.Error("Failed to update event category", sl.Err(err))
@@ -138,7 +138,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, eventID int64) (int64, e
 		return -1, tx.Error
 	}
 
-	_, err := s.EventStorage.DeleteEventCategory(ctx, eventID)
+	_, err := s.EventStorage.DeleteEventCategory(ctx, tx, eventID)
 
 	if err != nil {
 		tx.Rollback()
@@ -146,7 +146,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, eventID int64) (int64, e
 		return -1, err
 	}
 
-	_, err = s.EventStorage.DeleteEvent(ctx, eventID)
+	_, err = s.EventStorage.DeleteEvent(ctx, tx, eventID)
 	if err != nil {
 		tx.Rollback()
 		s.log.Error("Failed to delete event", sl.Err(err))
@@ -159,7 +159,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, eventID int64) (int64, e
 		return -1, err
 	}
 
-	return s.EventStorage.DeleteEvent(ctx, eventID)
+	return eventID, nil
 }
 
 func (s *EventService) GetEvent(ctx context.Context, eventID int64) (models.Event, error) {
