@@ -3,6 +3,7 @@ package eventgrpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"tn/internal/domain/models"
 	"tn/internal/storage"
 	"tn/internal/utils/converter"
@@ -43,7 +44,7 @@ func (s *serverAPI) AuthMiddleware(ctx context.Context) (int64, error) {
 	}
 
 	token := md.Get("token")
-
+	fmt.Println(token)
 	// refresh ...
 	if fl, id := s.tm.IsOrganizer(token[0]); fl {
 		return id, nil
@@ -66,6 +67,7 @@ func (s *serverAPI) AddEvent(ctx context.Context, req *eventv1.AddEventRequest) 
 		Country:      req.GetCountry(),
 		City:         req.GetCity(),
 		Place:        req.GetPlace(),
+		Address:      req.GetAddress(),
 		Date:         req.GetDate().AsTime(),
 		TicketAmount: req.GetTicketAmount(),
 		Age:          req.GetAge(),

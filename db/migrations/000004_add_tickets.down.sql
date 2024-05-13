@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS ticket;
+DROP TABLE IF EXISTS tickets;

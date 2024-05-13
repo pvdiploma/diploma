@@ -33,7 +33,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	_ = log
+
 	singingKey := []byte(os.Getenv("SINGING_KEY"))
 
 	tm := tokenmanager.NewManager(singingKey)
@@ -45,17 +45,21 @@ func run() error {
 		cfg.Clients.Event.Timeout,
 		cfg.Clients.Event.RetriesCount,
 	)
+	if err != nil {
+		log.Error("Failed to create event client", logger.Err(err))
+		return err
+	}
 
-	ticketapp := ticketapp.NewTicketApp(log, cfg.GRPC.Port, cfg.StoragePath, tm, eventClient)
+	ticketApp := ticketapp.NewTicketApp(log, cfg.GRPC.Port, cfg.StoragePath, tm, eventClient)
 
-	go ticketapp.App.Run()
+	go ticketApp.App.Run()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	sig := <-stop
 
 	log.Info("Stopping grpc auth server", slog.String("stop signal", sig.String()))
-	ticketapp.App.Stop()
+	ticketApp.App.Stop()
 	return nil
 
 }

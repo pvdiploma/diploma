@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 	"tn/internal/domain/models"
 	"tn/internal/storage"
@@ -32,6 +33,7 @@ func NewStorage(storagePath string) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("db address", db)
 
 	return &Storage{db: db}, nil
 }
@@ -149,8 +151,10 @@ func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
 	return app, nil
 }
 
-func (s *Storage) SaveEvent(ctx context.Context, event models.Event) (int64, error) {
-	result := s.db.WithContext(ctx).Omit("categories").Create(&event)
+func (s *Storage) SaveEvent(ctx context.Context, event models.Event, tx *gorm.DB) (int64, error) {
+	fmt.Println("event", event)
+	result := tx.WithContext(ctx).Omit("Categories").Create(&event)
+	// result := s.db.WithContext(ctx).Omit("Categories").Create(&event)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 			return -1, storage.ErrEventExists
@@ -160,15 +164,18 @@ func (s *Storage) SaveEvent(ctx context.Context, event models.Event) (int64, err
 	return event.ID, nil
 }
 
-func (s *Storage) SaveEventCategory(ctx context.Context, event models.EventCategory) (int64, error) {
-	result := s.db.WithContext(ctx).Create(&event)
+func (s *Storage) SaveEventCategory(ctx context.Context, eventCategory models.EventCategory, tx *gorm.DB) (int64, error) {
+	fmt.Printf("event category%v\n", eventCategory)
+	// result := s.db.WithContext(ctx).Create(&eventCategory)
+	result := tx.WithContext(ctx).Create(&eventCategory)
+	fmt.Println(result)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 			return -1, storage.ErrEventExists
 		}
 		return -1, result.Error
 	}
-	return event.ID, nil
+	return eventCategory.ID, nil
 }
 
 func (s *Storage) UpdateEvent(ctx context.Context, event models.Event, omits []string) (int64, error) {

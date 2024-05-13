@@ -129,7 +129,7 @@ func (a *AuthService) IsOrginiser(ctx context.Context, userID int64) (bool, erro
 		return false, err
 	}
 
-	a.log.Info("checking if user is orginiser", slog.Int64("userID", userID), slog.Bool("isOrginiser", IsOrginiser))
+	a.log.Info("checking if user is organiser", slog.Int64("userID", userID), slog.Bool("isOrginiser", IsOrginiser))
 	return IsOrginiser, nil
 }
 

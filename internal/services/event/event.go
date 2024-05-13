@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"tn/internal/domain/models"
 
@@ -13,8 +14,8 @@ import (
 
 // work with database layer
 type EventStorage interface {
-	SaveEvent(ctx context.Context, event models.Event) (int64, error)
-	SaveEventCategory(ctx context.Context, event models.EventCategory) (int64, error)
+	SaveEvent(ctx context.Context, event models.Event, tx *gorm.DB) (int64, error)
+	SaveEventCategory(ctx context.Context, event models.EventCategory, tx *gorm.DB) (int64, error)
 
 	UpdateEvent(ctx context.Context, event models.Event, omits []string) (int64, error)
 	UpdateEventCategory(ctx context.Context, event models.EventCategory, omits ...string) (int64, error)
@@ -47,7 +48,7 @@ func New(log *slog.Logger,
 	eventStorage EventStorage,
 	db *gorm.DB,
 ) *EventService {
-
+	fmt.Println("db address", db)
 	return &EventService{
 		log:          log,
 		EventStorage: eventStorage,
@@ -63,7 +64,7 @@ func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64,
 		s.log.Error("Failed to create transaction", sl.Err(tx.Error))
 		return -1, tx.Error
 	}
-	eventID, err := s.EventStorage.SaveEvent(ctx, event)
+	eventID, err := s.EventStorage.SaveEvent(ctx, event, tx)
 
 	if err != nil {
 		tx.Rollback()
@@ -72,18 +73,17 @@ func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64,
 	}
 
 	for _, category := range event.Categories {
-		_, err = s.EventStorage.SaveEventCategory(ctx, models.EventCategory{
-			EventID:  eventID,
-			Category: category.Category,
-			Price:    category.Price,
-			Amount:   category.Amount,
-		})
+
+		s.log.Info("Saving event category", slog.Int64("eventID", eventID), slog.Any("category", category))
+		category.EventID = eventID
+		_, err = s.EventStorage.SaveEventCategory(ctx, category, tx)
 
 		if err != nil {
 			tx.Rollback()
 			s.log.Error("Failed to save event category", sl.Err(err))
 			return -1, err
 		}
+
 	}
 
 	err = tx.Commit().Error

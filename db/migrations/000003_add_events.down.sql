@@ -1,2 +1,2 @@
-DROP TABLE IF EXISTS event_category;
-DROP TABLE IF EXISTS event;
+DROP TABLE IF EXISTS event_categories;
+DROP TABLE IF EXISTS events;

@@ -31,7 +31,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
+	// why i dont use ticket client???
 	singingKey := []byte(os.Getenv("SINGING_KEY"))
 
 	tm := tokenmanager.NewManager(singingKey)
