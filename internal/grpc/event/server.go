@@ -22,6 +22,7 @@ type Event interface {
 	UpdateEvent(ctx context.Context, event models.Event) (int64, error)
 	DeleteEvent(ctx context.Context, eventID int64) (int64, error)
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
+	GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error)
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
 	GetPrevEvents(ctx context.Context) ([]models.Event, error)
 }
@@ -88,13 +89,14 @@ func (s *serverAPI) AddEvent(ctx context.Context, req *eventv1.AddEventRequest) 
 
 func (s *serverAPI) UpdateEvent(ctx context.Context, req *eventv1.UpdateEventRequest) (*eventv1.UpdateEventResponse, error) {
 
-	ownerID, err := s.AuthMiddleware(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// ownerID, err := s.AuthMiddleware(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//just for testing
+	// ownerID := int64(1)
 
 	id, err := s.event.UpdateEvent(ctx, models.Event{
-		OwnerID:      ownerID,
 		ID:           req.GetEventId(),
 		Name:         req.GetName(),
 		Description:  req.GetDescription(),
@@ -156,7 +158,7 @@ func (s *serverAPI) GetEvent(ctx context.Context, req *eventv1.GetEventRequest) 
 
 func (s *serverAPI) GetEventByCategoryId(ctx context.Context, req *eventv1.GetEventByCategoryIdRequest) (*eventv1.GetEventByCategoryIdResponse, error) {
 
-	event, err := s.event.GetEvent(ctx, req.GetEventCategoryId())
+	event, err := s.event.GetEventByCategoryId(ctx, req.GetEventCategoryId())
 	if err != nil {
 		if errors.Is(err, storage.ErrEventNotFound) {
 			return nil, status.Error(codes.NotFound, "event not found")

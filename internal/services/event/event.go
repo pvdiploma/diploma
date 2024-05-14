@@ -25,6 +25,7 @@ type EventStorage interface {
 
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
 	GetEventCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error)
+	GetEventIDByCategoryID(ctx context.Context, eventCategoryID int64) (int64, error)
 
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
 	// GetAllEventsCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error) do i need this?
@@ -97,7 +98,8 @@ func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64,
 }
 
 func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) (int64, error) {
-	tx := s.db.Commit()
+
+	tx := s.db.Begin()
 	if tx.Error != nil {
 		s.log.Error("Failed to create transaction", sl.Err(tx.Error))
 		return -1, tx.Error
@@ -170,11 +172,27 @@ func (s *EventService) GetEvent(ctx context.Context, eventID int64) (models.Even
 	}
 
 	event.Categories, err = s.EventStorage.GetEventCategory(ctx, eventID)
+	fmt.Println(event.Categories)
 	if err != nil {
 		s.log.Error("Failed to get event category", sl.Err(err))
 		return event, err
 	}
 
+	return event, nil
+}
+
+func (s *EventService) GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error) {
+
+	eventID, err := s.EventStorage.GetEventIDByCategoryID(ctx, eventCategoryID)
+	if err != nil {
+		s.log.Error("Failed to get event id", sl.Err(err))
+		return models.Event{}, err
+	}
+	event, err := s.GetEvent(ctx, eventID)
+	if err != nil {
+		s.log.Error("Failed to get event by id", sl.Err(err))
+		return models.Event{}, err
+	}
 	return event, nil
 }
 

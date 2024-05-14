@@ -68,7 +68,7 @@ func (c *Client) GetEvent(ctx context.Context, eventID int64) (models.Event, err
 		c.log.Error("Failed to get event", sl.Err(err))
 		return models.Event{}, err
 	}
-	event = converter.ProtoEventToModel(resp.Event) // check resp.GetEvent()
+	event = converter.ProtoEventToModel(resp.Event) // !!!
 	return event, nil
 }
 

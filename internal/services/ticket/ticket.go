@@ -22,7 +22,10 @@ type TicketStorage interface {
 	GetTicketByEmail(ctx context.Context, email string) (models.Ticket, error)
 }
 
-var ErrInvalidTicketID = errors.New("invalid ticketID")
+var (
+	ErrInvalidTicketID  = errors.New("invalid ticketID")
+	ErrHasNoMoreTickets = errors.New("no more tickets")
+)
 
 type TicketService struct {
 	log           *slog.Logger
@@ -54,11 +57,12 @@ func GenerateImage(ticket models.Ticket, event models.Event, eventCategory model
 	}, nil
 }
 
+// TODO: REFACTOR THIS
 func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, name string, surname string, patronymic string, discount uint32, email string) (int64, error) {
-	//НУЖНА ЛИ ТУТ ТРАНЗАКЦИЯ????
 
 	event, err := s.EventClient.GetEventByCategoryId(ctx, eventCategoryID)
 	if err != nil {
+		s.log.Error("event client error, cannot get event", sl.Err(err))
 		if status.Code(err) == codes.NotFound {
 			return -1, storage.ErrEventNotFound
 		}
@@ -68,7 +72,13 @@ func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, na
 	eventCategory, err := exctractEventCategory(eventCategoryID, event)
 
 	if err != nil {
+		s.log.Error("Failed to extract event category", sl.Err(err))
 		return -1, err
+	}
+
+	if eventCategory.Amount == 0 {
+		s.log.Error("No more tickets", sl.Err(ErrHasNoMoreTickets))
+		return -1, ErrHasNoMoreTickets
 	}
 
 	ticket := models.Ticket{
@@ -85,6 +95,7 @@ func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, na
 	img, err := GenerateImage(ticket, event, eventCategory)
 
 	if err != nil {
+		s.log.Error("Failed to generate image", sl.Err(err))
 		return -1, err
 	}
 
@@ -97,13 +108,14 @@ func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, na
 		return -1, nil
 	}
 
-	for _, category := range event.Categories {
-		if category.ID == eventCategory.ID { // is right?
-			category.Amount--
+	for i, category := range event.Categories {
+		if category.ID == eventCategoryID {
+			event.Categories[i].Amount--
+			break
 		}
 	}
-	event.TicketAmount--
 
+	event.TicketAmount--
 	_, err = s.EventClient.UpdateTicketAmount(ctx, event)
 
 	if err != nil {
@@ -149,8 +161,9 @@ func (s *TicketService) IsActivated(ctx context.Context, ticketID int64) (bool, 
 }
 
 func exctractEventCategory(eventCategoryId int64, event models.Event) (models.EventCategory, error) {
-
+	fmt.Println(eventCategoryId)
 	for _, eventCategory := range event.Categories {
+		fmt.Println(eventCategory)
 		if eventCategory.ID == eventCategoryId {
 			return eventCategory, nil
 		}

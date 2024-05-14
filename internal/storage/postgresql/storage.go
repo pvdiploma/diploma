@@ -186,7 +186,6 @@ func (s *Storage) UpdateEvent(ctx context.Context, tx *gorm.DB, event models.Eve
 }
 
 func (s *Storage) UpdateEventCategory(ctx context.Context, tx *gorm.DB, EventCategory models.EventCategory, omits ...string) (int64, error) {
-
 	result := tx.WithContext(ctx).Where("id = ?", EventCategory.ID).Omit(omits...).Updates(&EventCategory)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -231,6 +230,18 @@ func (s *Storage) GetEvent(ctx context.Context, eventID int64) (models.Event, er
 		return event, result.Error
 	}
 	return event, nil
+}
+
+func (s *Storage) GetEventIDByCategoryID(ctx context.Context, eventCategoryID int64) (int64, error) {
+	var eventCategory models.EventCategory
+	result := s.db.WithContext(ctx).Where("id = ?", eventCategoryID).First(&eventCategory)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrEventNotFound
+		}
+		return -1, result.Error
+	}
+	return eventCategory.EventID, nil
 }
 
 func (s *Storage) GetEventCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error) {
