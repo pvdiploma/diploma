@@ -12,6 +12,8 @@ func ProtoCategoryToModels(reqData []*eventv1.EventCategory) []models.EventCateg
 
 	for i := range reqData {
 		eventCategories = append(eventCategories, models.EventCategory{
+			ID:       reqData[i].GetId(),
+			EventID:  reqData[i].GetEventId(),
 			Category: reqData[i].GetCategory(),
 			Price:    reqData[i].GetPrice(),
 			Amount:   reqData[i].GetAmount(),
@@ -24,6 +26,7 @@ func ModelCategoryToProto(events []models.EventCategory) []*eventv1.EventCategor
 	var eventCategories []*eventv1.EventCategory
 
 	for i := range events {
+
 		eventCategories = append(eventCategories, &eventv1.EventCategory{
 			Id:       events[i].ID,
 			EventId:  events[i].EventID,
@@ -43,6 +46,7 @@ func ModelEventToProto(event models.Event) *eventv1.Event {
 		Country:      event.Country,
 		City:         event.City,
 		Place:        event.Place,
+		Address:      event.Address,
 		Date:         timestamppb.New(event.Date),
 		TicketAmount: event.TicketAmount,
 		Age:          event.Age,

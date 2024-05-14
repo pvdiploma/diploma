@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"tn/internal/domain/models"
 
@@ -13,17 +14,18 @@ import (
 
 // work with database layer
 type EventStorage interface {
-	SaveEvent(ctx context.Context, event models.Event) (int64, error)
-	SaveEventCategory(ctx context.Context, event models.EventCategory) (int64, error)
+	SaveEvent(ctx context.Context, event models.Event, tx *gorm.DB) (int64, error)
+	SaveEventCategory(ctx context.Context, event models.EventCategory, tx *gorm.DB) (int64, error)
 
-	UpdateEvent(ctx context.Context, event models.Event, omits []string) (int64, error)
-	UpdateEventCategory(ctx context.Context, event models.EventCategory, omits ...string) (int64, error)
+	UpdateEvent(ctx context.Context, tx *gorm.DB, event models.Event, omits []string) (int64, error)
+	UpdateEventCategory(ctx context.Context, tx *gorm.DB, event models.EventCategory, omits ...string) (int64, error)
 
-	DeleteEvent(ctx context.Context, eventID int64) (int64, error)
-	DeleteEventCategory(ctx context.Context, eventID int64) (int64, error)
+	DeleteEvent(ctx context.Context, tx *gorm.DB, eventID int64) (int64, error)
+	DeleteEventCategory(ctx context.Context, tx *gorm.DB, eventID int64) (int64, error)
 
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
 	GetEventCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error)
+	GetEventIDByCategoryID(ctx context.Context, eventCategoryID int64) (int64, error)
 
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
 	// GetAllEventsCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error) do i need this?
@@ -47,7 +49,7 @@ func New(log *slog.Logger,
 	eventStorage EventStorage,
 	db *gorm.DB,
 ) *EventService {
-
+	fmt.Println("db address", db)
 	return &EventService{
 		log:          log,
 		EventStorage: eventStorage,
@@ -63,7 +65,7 @@ func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64,
 		s.log.Error("Failed to create transaction", sl.Err(tx.Error))
 		return -1, tx.Error
 	}
-	eventID, err := s.EventStorage.SaveEvent(ctx, event)
+	eventID, err := s.EventStorage.SaveEvent(ctx, event, tx)
 
 	if err != nil {
 		tx.Rollback()
@@ -72,18 +74,17 @@ func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64,
 	}
 
 	for _, category := range event.Categories {
-		_, err = s.EventStorage.SaveEventCategory(ctx, models.EventCategory{
-			EventID:  eventID,
-			Category: category.Category,
-			Price:    category.Price,
-			Amount:   category.Amount,
-		})
+
+		s.log.Info("Saving event category", slog.Int64("eventID", eventID), slog.Any("category", category))
+		category.EventID = eventID
+		_, err = s.EventStorage.SaveEventCategory(ctx, category, tx)
 
 		if err != nil {
 			tx.Rollback()
 			s.log.Error("Failed to save event category", sl.Err(err))
 			return -1, err
 		}
+
 	}
 
 	err = tx.Commit().Error
@@ -97,14 +98,15 @@ func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64,
 }
 
 func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) (int64, error) {
-	tx := s.db.Commit()
+
+	tx := s.db.Begin()
 	if tx.Error != nil {
 		s.log.Error("Failed to create transaction", sl.Err(tx.Error))
 		return -1, tx.Error
 	}
 
 	eventOmits := GetEventOmitFields(event)
-	_, err := s.EventStorage.UpdateEvent(ctx, event, eventOmits)
+	_, err := s.EventStorage.UpdateEvent(ctx, tx, event, eventOmits)
 	if err != nil {
 		tx.Rollback()
 		s.log.Error("Failed to update event", sl.Err(err))
@@ -113,7 +115,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) (int
 
 	for i := range event.Categories {
 		categoryOmits := GetEventCategoryOmitFields(event.Categories[i])
-		_, err := s.EventStorage.UpdateEventCategory(ctx, event.Categories[i], categoryOmits...)
+		_, err := s.EventStorage.UpdateEventCategory(ctx, tx, event.Categories[i], categoryOmits...)
 		if err != nil {
 			tx.Rollback()
 			s.log.Error("Failed to update event category", sl.Err(err))
@@ -138,7 +140,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, eventID int64) (int64, e
 		return -1, tx.Error
 	}
 
-	_, err := s.EventStorage.DeleteEventCategory(ctx, eventID)
+	_, err := s.EventStorage.DeleteEventCategory(ctx, tx, eventID)
 
 	if err != nil {
 		tx.Rollback()
@@ -146,7 +148,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, eventID int64) (int64, e
 		return -1, err
 	}
 
-	_, err = s.EventStorage.DeleteEvent(ctx, eventID)
+	_, err = s.EventStorage.DeleteEvent(ctx, tx, eventID)
 	if err != nil {
 		tx.Rollback()
 		s.log.Error("Failed to delete event", sl.Err(err))
@@ -159,7 +161,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, eventID int64) (int64, e
 		return -1, err
 	}
 
-	return s.EventStorage.DeleteEvent(ctx, eventID)
+	return eventID, nil
 }
 
 func (s *EventService) GetEvent(ctx context.Context, eventID int64) (models.Event, error) {
@@ -170,11 +172,27 @@ func (s *EventService) GetEvent(ctx context.Context, eventID int64) (models.Even
 	}
 
 	event.Categories, err = s.EventStorage.GetEventCategory(ctx, eventID)
+	fmt.Println(event.Categories)
 	if err != nil {
 		s.log.Error("Failed to get event category", sl.Err(err))
 		return event, err
 	}
 
+	return event, nil
+}
+
+func (s *EventService) GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error) {
+
+	eventID, err := s.EventStorage.GetEventIDByCategoryID(ctx, eventCategoryID)
+	if err != nil {
+		s.log.Error("Failed to get event id", sl.Err(err))
+		return models.Event{}, err
+	}
+	event, err := s.GetEvent(ctx, eventID)
+	if err != nil {
+		s.log.Error("Failed to get event by id", sl.Err(err))
+		return models.Event{}, err
+	}
 	return event, nil
 }
 

@@ -3,6 +3,7 @@ package eventgrpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"tn/internal/domain/models"
 	"tn/internal/storage"
 	"tn/internal/utils/converter"
@@ -21,6 +22,7 @@ type Event interface {
 	UpdateEvent(ctx context.Context, event models.Event) (int64, error)
 	DeleteEvent(ctx context.Context, eventID int64) (int64, error)
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
+	GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error)
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
 	GetPrevEvents(ctx context.Context) ([]models.Event, error)
 }
@@ -43,7 +45,7 @@ func (s *serverAPI) AuthMiddleware(ctx context.Context) (int64, error) {
 	}
 
 	token := md.Get("token")
-
+	fmt.Println(token)
 	// refresh ...
 	if fl, id := s.tm.IsOrganizer(token[0]); fl {
 		return id, nil
@@ -66,6 +68,7 @@ func (s *serverAPI) AddEvent(ctx context.Context, req *eventv1.AddEventRequest) 
 		Country:      req.GetCountry(),
 		City:         req.GetCity(),
 		Place:        req.GetPlace(),
+		Address:      req.GetAddress(),
 		Date:         req.GetDate().AsTime(),
 		TicketAmount: req.GetTicketAmount(),
 		Age:          req.GetAge(),
@@ -86,13 +89,14 @@ func (s *serverAPI) AddEvent(ctx context.Context, req *eventv1.AddEventRequest) 
 
 func (s *serverAPI) UpdateEvent(ctx context.Context, req *eventv1.UpdateEventRequest) (*eventv1.UpdateEventResponse, error) {
 
-	ownerID, err := s.AuthMiddleware(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// ownerID, err := s.AuthMiddleware(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//just for testing
+	// ownerID := int64(1)
 
 	id, err := s.event.UpdateEvent(ctx, models.Event{
-		OwnerID:      ownerID,
 		ID:           req.GetEventId(),
 		Name:         req.GetName(),
 		Description:  req.GetDescription(),
@@ -148,6 +152,21 @@ func (s *serverAPI) GetEvent(ctx context.Context, req *eventv1.GetEventRequest) 
 	}
 
 	return &eventv1.GetEventResponse{
+		Event: converter.ModelEventToProto(event),
+	}, nil
+}
+
+func (s *serverAPI) GetEventByCategoryId(ctx context.Context, req *eventv1.GetEventByCategoryIdRequest) (*eventv1.GetEventByCategoryIdResponse, error) {
+
+	event, err := s.event.GetEventByCategoryId(ctx, req.GetEventCategoryId())
+	if err != nil {
+		if errors.Is(err, storage.ErrEventNotFound) {
+			return nil, status.Error(codes.NotFound, "event not found")
+		}
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &eventv1.GetEventByCategoryIdResponse{
 		Event: converter.ModelEventToProto(event),
 	}, nil
 }

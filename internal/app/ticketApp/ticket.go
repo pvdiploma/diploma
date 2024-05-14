@@ -17,6 +17,7 @@ type TicketApp struct {
 }
 
 func NewTicketApp(log *slog.Logger, port int, storagePath string, tm *tokenmanager.TokenManager, eventClient *eventclient.Client) *TicketApp {
+
 	storage, err := postgresql.NewStorage(storagePath)
 	if err != nil {
 		log.Error("Failed to create storage", err)
@@ -29,6 +30,6 @@ func NewTicketApp(log *slog.Logger, port int, storagePath string, tm *tokenmanag
 	ticketgrpc.Register(gRPCServer, ticketService)
 
 	return &TicketApp{
-		App: app.NewApp(log, nil, port),
+		App: app.NewApp(log, gRPCServer, port),
 	}
 }

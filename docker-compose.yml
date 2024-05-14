@@ -47,6 +47,7 @@ services:
         condition: service_started
   event:
     container_name: event-service
+    restart: always
     build: 
       context: ./cmd/event
       dockerfile: Dockerfile
@@ -63,6 +64,7 @@ services:
         condition: service_started
   ticket:
     container_name: ticket-service
+    restart: always
     build: 
       context: ./cmd/ticket
       dockerfile: Dockerfile

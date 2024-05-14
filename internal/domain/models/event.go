@@ -10,8 +10,9 @@ type Event struct {
 	Country      string
 	City         string
 	Place        string
+	Address      string
 	Date         time.Time
-	TicketAmount uint32
+	TicketAmount uint32 `gorm:"omitempty"`
 	Age          string
 	Categories   []EventCategory
 }
@@ -21,5 +22,5 @@ type EventCategory struct {
 	EventID  int64
 	Category string
 	Price    uint32
-	Amount   uint32
+	Amount   uint32 `gorm:"omitempty"`
 }

@@ -17,7 +17,7 @@ type TokenManager struct {
 func NewManager(signingKey []byte) *TokenManager {
 	return &TokenManager{
 		signingKey:           signingKey,
-		AccessTokenLifeTime:  time.Duration(1) * time.Minute,
+		AccessTokenLifeTime:  time.Duration(30) * time.Minute,
 		RefreshTokenLifeTime: time.Duration(30) * time.Minute,
 	}
 }
@@ -51,17 +51,16 @@ func (m *TokenManager) IsOrganizer(tokenStr string) (bool, int64) {
 	if err != nil {
 		return false, -1
 	}
-
+	fmt.Println(token.Claims)
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		expirationTime := time.Unix(int64(claims["exp"].(float64)), 0)
 		if time.Now().After(expirationTime) {
 			return false, -1
 		}
-		if claims["role"] != 1 { // create const for types of users
+		if int32(claims["role"].(float64)) != 1 {
 			return false, -1
 		}
-
-		return true, claims["userID"].(int64)
+		return true, int64(claims["userID"].(float64))
 	}
 
 	return false, -1
@@ -118,6 +117,5 @@ func (m *TokenManager) NewJWT(user models.User, duration time.Duration) (string,
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// app sercet or common tokenManager secret???
 	return token.SignedString([]byte(m.signingKey))
 }

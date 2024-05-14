@@ -33,6 +33,7 @@ func (a *App) Run() error {
 	log.Info("Starting grpc server", slog.String("addr", l.Addr().String()))
 
 	if err := a.grpc.Serve(l); err != nil {
+		log.Error("Failed to start grpc server", err)
 		return err
 	}
 

@@ -3,6 +3,7 @@ package ticket
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	eventclient "tn/internal/clients/event"
 	"tn/internal/domain/models"
@@ -21,7 +22,10 @@ type TicketStorage interface {
 	GetTicketByEmail(ctx context.Context, email string) (models.Ticket, error)
 }
 
-var ErrInvalidTicketID = errors.New("invalid ticketID")
+var (
+	ErrInvalidTicketID  = errors.New("invalid ticketID")
+	ErrHasNoMoreTickets = errors.New("no more tickets")
+)
 
 type TicketService struct {
 	log           *slog.Logger
@@ -53,24 +57,32 @@ func GenerateImage(ticket models.Ticket, event models.Event, eventCategory model
 	}, nil
 }
 
-func (s *TicketService) AddTicket(ctx context.Context, event_category_id int64, name string, surname string, patronymic string, discount uint32, email string) (int64, error) {
-	// в общем:
-	// 1) сначала поиск EventCategory, потом по id event поиск event - получаем все нужные данные
-	// or 2) Пройти forом по Event и найти нужную категория по id
-	// вопрос как лучше. Внутренний фор явно быстрее вызова во внешний сервис.
-	// aboba
+// TODO: REFACTOR THIS
+func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, name string, surname string, patronymic string, discount uint32, email string) (int64, error) {
 
-	event, err := s.EventClient.GetEvent(ctx, event_category_id) // use GetEventByCategoryID instead of GetEvent
+	event, err := s.EventClient.GetEventByCategoryId(ctx, eventCategoryID)
 	if err != nil {
+		s.log.Error("event client error, cannot get event", sl.Err(err))
 		if status.Code(err) == codes.NotFound {
 			return -1, storage.ErrEventNotFound
 		}
 		return -1, err
 	}
 
-	eventCategory := models.EventCategory{}
+	eventCategory, err := exctractEventCategory(eventCategoryID, event)
+
+	if err != nil {
+		s.log.Error("Failed to extract event category", sl.Err(err))
+		return -1, err
+	}
+
+	if eventCategory.Amount == 0 {
+		s.log.Error("No more tickets", sl.Err(ErrHasNoMoreTickets))
+		return -1, ErrHasNoMoreTickets
+	}
+
 	ticket := models.Ticket{
-		EventCategoryID: event_category_id,
+		EventCategoryID: eventCategoryID,
 		Name:            name,
 		Surname:         surname,
 		Patronymic:      patronymic,
@@ -83,6 +95,7 @@ func (s *TicketService) AddTicket(ctx context.Context, event_category_id int64, 
 	img, err := GenerateImage(ticket, event, eventCategory)
 
 	if err != nil {
+		s.log.Error("Failed to generate image", sl.Err(err))
 		return -1, err
 	}
 
@@ -94,6 +107,22 @@ func (s *TicketService) AddTicket(ctx context.Context, event_category_id int64, 
 		s.log.Error("Failed to save ticket", sl.Err(err))
 		return -1, nil
 	}
+
+	for i, category := range event.Categories {
+		if category.ID == eventCategoryID {
+			event.Categories[i].Amount--
+			break
+		}
+	}
+
+	event.TicketAmount--
+	_, err = s.EventClient.UpdateTicketAmount(ctx, event)
+
+	if err != nil {
+		s.log.Error("Failed to update event", sl.Err(err))
+		return -1, err
+	}
+
 	return id, nil
 }
 
@@ -129,4 +158,15 @@ func (s *TicketService) IsActivated(ctx context.Context, ticketID int64) (bool, 
 	}
 
 	return ticket.IsActivated, nil
+}
+
+func exctractEventCategory(eventCategoryId int64, event models.Event) (models.EventCategory, error) {
+	fmt.Println(eventCategoryId)
+	for _, eventCategory := range event.Categories {
+		fmt.Println(eventCategory)
+		if eventCategory.ID == eventCategoryId {
+			return eventCategory, nil
+		}
+	}
+	return models.EventCategory{}, fmt.Errorf("event category with id %d not found", eventCategoryId)
 }

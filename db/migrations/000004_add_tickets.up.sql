@@ -1,6 +1,6 @@
-CREATE TABLE IF NOT EXISTS ticket (
+CREATE TABLE IF NOT EXISTS tickets (
     id SERIAL PRIMARY KEY,
-    event_category_id INTEGER REFERENCES event_category (id) NOT NULL,
+    event_category_id INTEGER REFERENCES event_categories (id) NOT NULL,
     name varchar(255) NOT NULL,
     surname varchar(255) NOT NULL,
     patronymic varchar(255),
