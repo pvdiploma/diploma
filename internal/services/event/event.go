@@ -49,7 +49,6 @@ func New(log *slog.Logger,
 	eventStorage EventStorage,
 	db *gorm.DB,
 ) *EventService {
-	fmt.Println("db address", db)
 	return &EventService{
 		log:          log,
 		EventStorage: eventStorage,
@@ -57,7 +56,6 @@ func New(log *slog.Logger,
 	}
 }
 
-// TODO: test this
 func (s *EventService) AddEvent(ctx context.Context, event models.Event) (int64, error) {
 
 	tx := s.db.Begin()

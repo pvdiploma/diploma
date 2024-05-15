@@ -57,7 +57,7 @@ func GenerateImage(ticket models.Ticket, event models.Event, eventCategory model
 	}, nil
 }
 
-//TODO: REFACTOR THIS
+// TODO: REFACTOR THIS
 func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, name string, surname string, patronymic string, discount uint32, email string) (int64, error) {
 
 	event, err := s.EventClient.GetEventByCategoryId(ctx, eventCategoryID)
@@ -81,7 +81,6 @@ func (s *TicketService) AddTicket(ctx context.Context, eventCategoryID int64, na
 		return -1, ErrHasNoMoreTickets
 	}
 
-	
 	ticket := models.Ticket{
 		EventCategoryID: eventCategoryID,
 		Name:            name,
