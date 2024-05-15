@@ -78,3 +78,19 @@ services:
         condition: service_healthy
       dependencies:
         condition: service_started
+  payment:
+    container_name: payment-service
+    restart: always
+    build: 
+      context: ./cmd/payment
+      dockerfile: Dockerfile
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "8093:8090"
+    depends_on:
+      db:
+        condition: service_healthy
+      dependencies:
+        condition: service_started
+      
