@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	eventapp "tn/internal/app/eventApp"
+	paymentapp "tn/internal/app/paymentApp"
 	"tn/internal/config"
 	tokenmanager "tn/internal/utils/tokenManager"
 	"tn/pkg/logger"
@@ -35,16 +35,16 @@ func run() error {
 	singingKey := []byte(os.Getenv("SINGING_KEY"))
 
 	tm := tokenmanager.NewManager(singingKey)
-	eventApp := eventapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, cfg.RedisPath, tm)
+	paymentApp := paymentapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, tm)
 
-	go eventApp.App.Run()
+	go paymentApp.App.Run()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	sig := <-stop
 
 	log.Info("Stopping grpc auth server", slog.String("stop signal", sig.String()))
-	eventApp.App.Stop()
+	paymentApp.App.Stop()
 	return nil
 
 }

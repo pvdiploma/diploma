@@ -3,6 +3,8 @@ package paymentapp
 import (
 	"log/slog"
 	"tn/internal/app"
+	paymentgrpc "tn/internal/grpc/payment"
+	"tn/internal/services/payment"
 	"tn/internal/storage/postgresql"
 	tokenmanager "tn/internal/utils/tokenManager"
 
@@ -20,12 +22,12 @@ func NewEventApp(log *slog.Logger, port int, storagePath string, tm *tokenmanage
 		log.Error("Failed to create storage", err)
 		panic(err)
 	}
-	_ = storage
-	// eventService := event.New(log, storage, storage.DB())
+	_ = storage // for future
+	paymentService := payment.New(log)
 
 	gRPCServer := grpc.NewServer()
 
-	// eventgrpc.Register(gRPCServer, eventService, tm)
+	paymentgrpc.Register(gRPCServer, paymentService, tm)
 	return &PaymentApp{
 		App: app.NewApp(log, gRPCServer, port),
 	}
