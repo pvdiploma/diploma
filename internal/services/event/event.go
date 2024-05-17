@@ -25,6 +25,7 @@ type EventStorage interface {
 
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
 	GetEventCategory(ctx context.Context, eventID int64) ([]models.EventCategory, error)
+	GetCategory(ctx context.Context, eventCategoryID int64) (models.EventCategory, error)
 	GetEventIDByCategoryID(ctx context.Context, eventCategoryID int64) (int64, error)
 
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
@@ -192,6 +193,15 @@ func (s *EventService) GetEventByCategoryId(ctx context.Context, eventCategoryID
 		return models.Event{}, err
 	}
 	return event, nil
+}
+
+func (s *EventService) GetEventCategory(ctx context.Context, eventCategoryID int64) (models.EventCategory, error) {
+	eventCategory, err := s.EventStorage.GetCategory(ctx, eventCategoryID)
+	if err != nil {
+		s.log.Error("Failed to get event category", sl.Err(err))
+		return models.EventCategory{}, err
+	}
+	return eventCategory, nil
 }
 
 func (s *EventService) GetAllEvents(ctx context.Context) ([]models.Event, error) {

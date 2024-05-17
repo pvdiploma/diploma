@@ -23,6 +23,7 @@ type Event interface {
 	DeleteEvent(ctx context.Context, eventID int64) (int64, error)
 	GetEvent(ctx context.Context, eventID int64) (models.Event, error)
 	GetEventByCategoryId(ctx context.Context, eventCategoryID int64) (models.Event, error)
+	GetEventCategory(ctx context.Context, eventCategoryID int64) (models.EventCategory, error)
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
 	GetPrevEvents(ctx context.Context) ([]models.Event, error)
 }
@@ -168,6 +169,21 @@ func (s *serverAPI) GetEventByCategoryId(ctx context.Context, req *eventv1.GetEv
 
 	return &eventv1.GetEventByCategoryIdResponse{
 		Event: converter.ModelEventToProto(event),
+	}, nil
+}
+
+func (s *serverAPI) GetEventCategory(ctx context.Context, req *eventv1.GetEventCategoryRequest) (*eventv1.GetEventCategoryResponse, error) {
+
+	eventCategory, err := s.event.GetEventCategory(ctx, req.GetEventCategoryId())
+	if err != nil {
+		if errors.Is(err, storage.ErrEventNotFound) {
+			return nil, status.Error(codes.NotFound, "event not found")
+		}
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &eventv1.GetEventCategoryResponse{
+		Category: converter.ModelCategoryToProto2(eventCategory),
 	}, nil
 }
 

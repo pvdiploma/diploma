@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type Client struct {
@@ -51,6 +52,30 @@ func NewClient(
 	return &Client{
 		api: ticketv1.NewTicketServiceClient(cc),
 		log: log,
+	}, nil
+
+}
+
+func (c *Client) CreateTicket(ctx context.Context, purchaseToken string, eventID int64, eventCategoryID int64, name string, surname string, patronymic string, discount uint32, email string) (*ticketv1.AddTicketResponse, error) {
+	md := metadata.Pairs("token", purchaseToken)
+	ctxWithToken := metadata.NewOutgoingContext(ctx, md)
+
+	id, err := c.api.AddTicket(ctxWithToken, &ticketv1.AddTicketRequest{
+		EventId:         eventID,
+		EventCategoryId: eventCategoryID,
+		Name:            name,
+		Surname:         surname,
+		Patronymic:      patronymic,
+		Discount:        discount,
+		Email:           email,
+	})
+
+	if err != nil {
+		c.log.Error("failed to add ticket: %v", err)
+		return nil, err
+	}
+	return &ticketv1.AddTicketResponse{
+		Id: id.Id,
 	}, nil
 
 }

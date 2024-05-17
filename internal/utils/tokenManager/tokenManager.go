@@ -119,3 +119,12 @@ func (m *TokenManager) NewJWT(user models.User, duration time.Duration) (string,
 
 	return token.SignedString([]byte(m.signingKey))
 }
+
+// NOTE: what about security with tis token()
+func (m *TokenManager) NewPurchaseToken() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
+	})
+
+	return token.SignedString([]byte(m.signingKey))
+}

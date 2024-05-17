@@ -257,6 +257,18 @@ func (s *Storage) GetEventCategory(ctx context.Context, eventID int64) ([]models
 	return eventCategory, nil
 }
 
+func (s *Storage) GetCategory(ctx context.Context, eventCategoryID int64) (models.EventCategory, error) {
+	var eventCategory models.EventCategory
+	result := s.db.WithContext(ctx).Where("id = ?", eventCategoryID).First(&eventCategory)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return eventCategory, storage.ErrEventNotFound
+		}
+		return eventCategory, result.Error
+	}
+	return eventCategory, nil
+}
+
 func (s *Storage) GetAllEvents(ctx context.Context) ([]models.Event, error) {
 
 	var events []models.Event

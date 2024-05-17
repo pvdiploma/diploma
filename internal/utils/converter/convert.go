@@ -4,6 +4,7 @@ import (
 	"tn/internal/domain/models"
 
 	eventv1 "github.com/pvdiploma/diploma-protos/gen/go/event"
+	paymentv1 "github.com/pvdiploma/diploma-protos/gen/go/payment"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -22,6 +23,16 @@ func ProtoCategoryToModels(reqData []*eventv1.EventCategory) []models.EventCateg
 	return eventCategories
 }
 
+func ProtoCategoryToModel(reqData *eventv1.EventCategory) models.EventCategory {
+	return models.EventCategory{
+		ID:       reqData.GetId(),
+		EventID:  reqData.GetEventId(),
+		Category: reqData.GetCategory(),
+		Price:    reqData.GetPrice(),
+		Amount:   reqData.GetAmount(),
+	}
+}
+
 func ModelCategoryToProto(events []models.EventCategory) []*eventv1.EventCategory {
 	var eventCategories []*eventv1.EventCategory
 
@@ -36,6 +47,17 @@ func ModelCategoryToProto(events []models.EventCategory) []*eventv1.EventCategor
 		})
 	}
 	return eventCategories
+}
+
+// fix naming ...
+func ModelCategoryToProto2(category models.EventCategory) *eventv1.EventCategory {
+	return &eventv1.EventCategory{
+		Id:       category.ID,
+		EventId:  category.EventID,
+		Category: category.Category,
+		Price:    category.Price,
+		Amount:   category.Amount,
+	}
 }
 
 func ModelEventToProto(event models.Event) *eventv1.Event {
@@ -67,4 +89,16 @@ func ProtoEventToModel(event *eventv1.Event) models.Event {
 		Age:          event.GetAge(),
 		Categories:   ProtoCategoryToModels(event.GetCategories()),
 	}
+}
+
+func ProtoPurchaseTicketsToModels(tickets []*paymentv1.TicketCategory) []models.PurchaseTickets {
+	var purchaseTickets []models.PurchaseTickets
+
+	for _, ticket := range tickets {
+		purchaseTickets = append(purchaseTickets, models.PurchaseTickets{
+			ID:     ticket.GetEventCategoryId(),
+			Amount: ticket.GetAmount(),
+		})
+	}
+	return purchaseTickets
 }
