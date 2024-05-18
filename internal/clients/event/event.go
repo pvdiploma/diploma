@@ -68,7 +68,7 @@ func (c *Client) GetEvent(ctx context.Context, eventID int64) (models.Event, err
 		c.log.Error("Failed to get event", sl.Err(err))
 		return models.Event{}, err
 	}
-	event = converter.ProtoEventToModel(resp.Event) // !!!
+	event = converter.ProtoEventToModel(resp.Event)
 	return event, nil
 }
 
@@ -97,6 +97,21 @@ func (c *Client) UpdateTicketAmount(ctx context.Context, event models.Event) (in
 	return resp.EventId, nil
 
 }
+
+// TEST THAT
+func (c *Client) GetEventCategory(ctx context.Context, eventCategoryID int64) (models.EventCategory, error) {
+
+	var eventCategory models.EventCategory
+	resp, err := c.api.GetEventCategory(ctx, &eventv1.GetEventCategoryRequest{EventCategoryId: eventCategoryID})
+	if err != nil {
+		c.log.Error("Failed to get event category", sl.Err(err))
+		return models.EventCategory{}, err
+	}
+
+	eventCategory = converter.ProtoCategoryToModel(resp.Category)
+	return eventCategory, nil
+}
+
 func InterceptorLogger(s *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, level grpclog.Level, msg string, fields ...any) {
 		s.Log(ctx, slog.Level(level), msg, fields...)
