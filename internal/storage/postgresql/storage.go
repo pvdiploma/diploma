@@ -417,3 +417,40 @@ func (s *Storage) GetDealsByStatus(ctx context.Context, userID int64, status mod
 	}
 	return deals, nil
 }
+
+func (s *Storage) CreateDealWidget(ctx context.Context, widget models.Widget) (int64, error) {
+
+	result := s.db.WithContext(ctx).Create(&widget)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return -1, storage.ErrDealExists
+		}
+		return -1, result.Error
+	}
+	return widget.ID, nil
+}
+
+func (s *Storage) DeleteDealWidget(ctx context.Context, widgetID int64) (int64, error) {
+
+	result := s.db.WithContext(ctx).Delete(&models.Widget{}, widgetID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrDealNotFound
+		}
+		return -1, result.Error
+	}
+	return widgetID, nil
+}
+
+func (s *Storage) GetDealWidget(ctx context.Context, widgetID int64) (models.Widget, error) {
+
+	var widget models.Widget
+	result := s.db.WithContext(ctx).Where("id = ?", widgetID).First(&widget)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return widget, storage.ErrDealNotFound
+		}
+		return widget, result.Error
+	}
+	return widget, nil
+}

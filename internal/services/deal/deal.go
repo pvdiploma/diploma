@@ -20,6 +20,8 @@ type DealStorage interface {
 }
 
 type WidgetStorage interface {
+	CreateDealWidget(ctx context.Context, widget models.Widget) (int64, error)
+	DeleteDealWidget(ctx context.Context, widgetID int64) (int64, error)
 }
 
 var (
@@ -65,6 +67,11 @@ func (s *DealService) AcceptDeal(ctx context.Context, dealID int64) (int64, erro
 		return -1, status.Error(codes.Internal, "failed to accept deal")
 	}
 
+	_, err = s.WidgetStorage.CreateDealWidget(ctx, models.Widget{DealID: id})
+	if err != nil {
+		s.log.Error("failed to create deal widget", err)
+		return -1, status.Error(codes.Internal, "failed to create deal widget")
+	}
 	return id, nil
 }
 
@@ -75,6 +82,12 @@ func (s *DealService) RejectDeal(ctx context.Context, dealID int64) (int64, erro
 			return -1, status.Error(codes.NotFound, "deal not found")
 		}
 		return -1, status.Error(codes.Internal, "failed to reject deal")
+	}
+
+	_, err = s.WidgetStorage.DeleteDealWidget(ctx, id)
+	if err != nil {
+		s.log.Error("failed to delete deal widget", err)
+		return -1, status.Error(codes.Internal, "failed to delete deal widget")
 	}
 
 	return id, nil
