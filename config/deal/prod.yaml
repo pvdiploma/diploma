@@ -1,0 +1,7 @@
+service_name: "deal"
+env: "local"
+storage_path: "postgres://postgres:postgres@db:5432/ticketnest_db?sslmode=disable"
+redis_path: ""
+grpc:
+  port: 8090
+  timeout: 5s

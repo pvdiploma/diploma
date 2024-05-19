@@ -354,3 +354,66 @@ func (s *Storage) ActivateTicket(ctx context.Context, ticketId int64) (int64, er
 	}
 	return ticketId, nil
 }
+
+func (s *Storage) CreateDeal(ctx context.Context, deal models.Deal) (int64, error) {
+
+	result := s.db.WithContext(ctx).Create(&deal)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return -1, storage.ErrDealExists
+		}
+		return -1, result.Error
+	}
+	return deal.ID, nil
+}
+
+func (s *Storage) UpdateDealStatus(ctx context.Context, dealID int64, status models.DealStatus) (int64, error) {
+
+	result := s.db.WithContext(ctx).Model(&models.Deal{}).Where("id = ?", dealID).Update("status", status)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrDealNotFound
+		}
+		return -1, result.Error
+	}
+	return dealID, nil
+}
+
+func (s *Storage) GetSentDeals(ctx context.Context, userID int64) ([]models.Deal, error) {
+
+	var deals []models.Deal
+	result := s.db.WithContext(ctx).Where("sender_id = ?", userID).Find(&deals)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return deals, storage.ErrDealNotFound
+		}
+		return deals, result.Error
+	}
+	return deals, nil
+}
+
+func (s *Storage) GetProposedDeals(ctx context.Context, userID int64) ([]models.Deal, error) {
+
+	var deals []models.Deal
+	result := s.db.WithContext(ctx).Where("receiver_id = ?", userID).Find(&deals)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return deals, storage.ErrDealNotFound
+		}
+		return deals, result.Error
+	}
+	return deals, nil
+}
+
+func (s *Storage) GetDealsByStatus(ctx context.Context, userID int64, status models.DealStatus) ([]models.Deal, error) {
+
+	var deals []models.Deal
+	result := s.db.WithContext(ctx).Where("sender_id = ? AND status = ?", userID, status).Find(&deals)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return deals, storage.ErrDealNotFound
+		}
+		return deals, result.Error
+	}
+	return deals, nil
+}

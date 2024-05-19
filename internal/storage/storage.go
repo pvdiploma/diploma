@@ -10,6 +10,8 @@ var (
 	ErrEventExists    = errors.New("event already exist")
 	ErrTicketExists   = errors.New("ticket already exists")
 	ErrTicketNotFound = errors.New("ticket not found")
+	ErrDealNotFound   = errors.New("deal not found")
+	ErrDealExists     = errors.New("deal already exists")
 )
 
 const (

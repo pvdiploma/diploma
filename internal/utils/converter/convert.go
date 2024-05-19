@@ -3,8 +3,10 @@ package converter
 import (
 	"tn/internal/domain/models"
 
+	dealv1 "github.com/pvdiploma/diploma-protos/gen/go/deal"
 	eventv1 "github.com/pvdiploma/diploma-protos/gen/go/event"
 	paymentv1 "github.com/pvdiploma/diploma-protos/gen/go/payment"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -101,4 +103,44 @@ func ProtoPurchaseTicketsToModels(tickets []*paymentv1.TicketCategory) []models.
 		})
 	}
 	return purchaseTickets
+}
+
+func DealStatusToProto(status models.DealStatus) dealv1.DealStatus {
+	switch status {
+	case models.Accepted:
+		return dealv1.DealStatus_ACCEPTED
+	case models.Rejected:
+		return dealv1.DealStatus_REJECTED
+	default:
+		return dealv1.DealStatus_PENDING
+	}
+}
+
+func ProtoDealStatusToModels(status dealv1.DealStatus) models.DealStatus {
+	switch status {
+	case dealv1.DealStatus_ACCEPTED:
+		return models.Accepted
+	case dealv1.DealStatus_REJECTED:
+		return models.Rejected
+	default:
+		return models.Pending
+	}
+}
+
+func ModelDealsToProto(deals []models.Deal) []*dealv1.Deals {
+	var dealsProto []*dealv1.Deals
+
+	for _, deal := range deals {
+		dealsProto = append(dealsProto, &dealv1.Deals{
+			Id:            deal.ID,
+			SenderId:      deal.SenderID,
+			RecipientId:   deal.RecipientID,
+			OrganizerId:   deal.OrganizerID,
+			DistributorId: deal.DistributorID,
+			Commission:    deal.Commission,
+			EventId:       deal.EventID,
+			Status:        DealStatusToProto(deal.Status),
+		})
+	}
+	return dealsProto
 }
