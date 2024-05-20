@@ -7,4 +7,5 @@ type User struct {
 	Email   string
 	PwdHash []byte
 	Role    int32
+	Balance float64 //separate this in another model
 }

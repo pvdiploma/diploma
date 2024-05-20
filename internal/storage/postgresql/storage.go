@@ -56,6 +56,7 @@ func (s *Storage) SaveUser(ctx context.Context, login string, email string, pwdH
 		Email:   email,
 		PwdHash: pwdHash,
 		Role:    role,
+		Balance: 0.0,
 	}
 
 	result := s.db.WithContext(ctx).Create(&user)
@@ -453,4 +454,29 @@ func (s *Storage) GetDealWidget(ctx context.Context, widgetID int64) (models.Wid
 		return widget, result.Error
 	}
 	return widget, nil
+}
+
+func (s *Storage) GetBalance(ctx context.Context, userID int64) (float64, error) {
+
+	var balance float64
+	result := s.db.WithContext(ctx).Model(&models.User{}).Select("balance").Where("id = ?", userID).Find(&balance)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return balance, storage.ErrUserNotFound
+		}
+		return balance, result.Error
+	}
+	return balance, nil
+}
+
+func (s *Storage) UpdateBalance(ctx context.Context, userID int64, balance float64) (int64, error) {
+
+	result := s.db.WithContext(ctx).Model(&models.User{}).Where("id = ?", userID).Update("balance", balance)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return -1, storage.ErrUserNotFound
+		}
+		return -1, result.Error
+	}
+	return userID, nil
 }

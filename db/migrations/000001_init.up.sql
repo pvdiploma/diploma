@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
     login    TEXT NOT NULL,
     email    TEXT UNIQUE NOT NULL,
     pwd_hash bytea NOT NULL,
-    role     INTEGER REFERENCES roles (role_id) NOT NULL
+    role     INTEGER REFERENCES roles (role_id) NOT NULL, 
+    balance  MONEY NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
