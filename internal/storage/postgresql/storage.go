@@ -380,6 +380,19 @@ func (s *Storage) UpdateDealStatus(ctx context.Context, dealID int64, status mod
 	return dealID, nil
 }
 
+func (s *Storage) GetDeal(ctx context.Context, dealID int64) (models.Deal, error) {
+
+	var deal models.Deal
+	result := s.db.WithContext(ctx).Where("id = ?", dealID).First(&deal)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return deal, storage.ErrDealNotFound
+		}
+		return deal, result.Error
+	}
+	return deal, nil
+}
+
 func (s *Storage) GetSentDeals(ctx context.Context, userID int64) ([]models.Deal, error) {
 
 	var deals []models.Deal

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"time"
+	"tn/internal/domain/models"
 
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
@@ -92,6 +93,18 @@ func (c *Client) DeleteTicket(ctx context.Context, ticketID int64) (*ticketv1.De
 	return &ticketv1.DeleteTicketResponse{
 		Id: id.Id, // id.GetId() ????
 	}, nil
+}
+
+func (c *Client) GetTicket(ctx context.Context, id int64) (models.Ticket, error) {
+
+	resp, err := c.api.GetTicketInfo(ctx, &ticketv1.GetTicketInfoRequest{Id: id})
+	if err != nil {
+		c.log.Error("Failed to get ticket", err)
+		return models.Ticket{}, err
+	}
+	_ = resp
+	ticket := models.Ticket{}
+	return ticket, nil
 }
 
 // TODO: put it in separate file

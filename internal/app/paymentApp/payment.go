@@ -3,6 +3,7 @@ package paymentapp
 import (
 	"log/slog"
 	"tn/internal/app"
+	dealclient "tn/internal/clients/deal"
 	eventclient "tn/internal/clients/event"
 	ticketclient "tn/internal/clients/ticket"
 	paymentgrpc "tn/internal/grpc/payment"
@@ -24,6 +25,7 @@ func NewEventApp(
 	tm *tokenmanager.TokenManager,
 	eventClient *eventclient.Client,
 	ticketClient *ticketclient.Client,
+	dealClient *dealclient.Client,
 ) *PaymentApp {
 
 	storage, err := postgresql.NewStorage(storagePath)
@@ -31,8 +33,7 @@ func NewEventApp(
 		log.Error("Failed to create storage", err)
 		panic(err)
 	}
-	_ = storage // for future
-	paymentService := payment.New(log, ticketClient, eventClient)
+	paymentService := payment.New(log, storage, ticketClient, eventClient, dealClient)
 
 	gRPCServer := grpc.NewServer()
 

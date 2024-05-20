@@ -11,6 +11,7 @@ import (
 	eventclient "tn/internal/clients/event"
 	ticketclient "tn/internal/clients/ticket"
 
+	dealclient "tn/internal/clients/deal"
 	"tn/internal/config"
 	tokenmanager "tn/internal/utils/tokenManager"
 	"tn/pkg/logger"
@@ -64,7 +65,15 @@ func run() error {
 		return err
 	}
 
-	paymentApp := paymentapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, tm, eventClient, ticketClient)
+	dealClient, err := dealclient.NewClient(
+		context.Background(),
+		log,
+		cfg.Clients.Deal.Addres,
+		cfg.Clients.Deal.Timeout,
+		cfg.Clients.Deal.RetriesCount,
+	)
+
+	paymentApp := paymentapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, tm, eventClient, ticketClient, dealClient)
 
 	go paymentApp.App.Run()
 	stop := make(chan os.Signal, 1)

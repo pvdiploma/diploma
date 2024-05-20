@@ -20,6 +20,8 @@ type Deal interface {
 	GetSentDeals(ctx context.Context, senderID int64) ([]models.Deal, error)
 	GetProposedDeals(ctx context.Context, recipientID int64) ([]models.Deal, error)
 	GetDealsByStatus(ctx context.Context, userID int64, status models.DealStatus) ([]models.Deal, error)
+	GetDeal(ctx context.Context, dealID int64) (models.Deal, error)
+	GetDealWidget(ctx context.Context, widgetID int64) (models.Widget, error)
 }
 
 type serverAPI struct {
@@ -129,4 +131,34 @@ func (s *serverAPI) GetDealsByStatus(ctx context.Context, req *dealv1.GetDealsBy
 		Deals: converter.ModelDealsToProto(deals),
 	}, nil
 
+}
+
+func (s *serverAPI) GetDeal(ctx context.Context, req *dealv1.GetDealRequest) (*dealv1.GetDealResponse, error) {
+
+	deal, err := s.deal.GetDeal(ctx, req.GetId())
+	if err != nil {
+		if errors.Is(err, storage.ErrDealNotFound) {
+			return nil, status.Error(codes.NotFound, "deal not found")
+		}
+		return nil, status.Error(codes.Internal, "failed to get deal")
+	}
+
+	return &dealv1.GetDealResponse{
+		Deal: converter.ModelDealToProto(deal),
+	}, nil
+}
+
+func (s *serverAPI) GetDealWidget(ctx context.Context, req *dealv1.GetDealWidgetRequest) (*dealv1.GetDealWidgetResponse, error) {
+
+	widget, err := s.deal.GetDealWidget(ctx, req.GetId())
+	if err != nil {
+		if errors.Is(err, storage.ErrDealWidgetNotFound) {
+			return nil, status.Error(codes.NotFound, "deal widget not found")
+		}
+		return nil, status.Error(codes.Internal, "failed to get deal widget")
+	}
+
+	return &dealv1.GetDealWidgetResponse{
+		Widget: converter.ModelWidgetToProto(widget),
+	}, nil
 }

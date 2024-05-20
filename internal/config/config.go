@@ -30,6 +30,7 @@ type Client struct {
 type CLientsConfig struct {
 	Event  Client `yaml:"event"`
 	Ticket Client `yaml:"ticket"`
+	Deal   Client `yaml:"deal"`
 }
 
 func New(filePath string) (*Config, error) {

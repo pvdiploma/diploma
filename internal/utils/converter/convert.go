@@ -144,3 +144,47 @@ func ModelDealsToProto(deals []models.Deal) []*dealv1.Deals {
 	}
 	return dealsProto
 }
+
+func ModelDealToProto(deal models.Deal) *dealv1.Deals {
+	return &dealv1.Deals{
+		Id:            deal.ID,
+		SenderId:      deal.SenderID,
+		RecipientId:   deal.RecipientID,
+		OrganizerId:   deal.OrganizerID,
+		DistributorId: deal.DistributorID,
+		Commission:    deal.Commission,
+		EventId:       deal.EventID,
+		Status:        DealStatusToProto(deal.Status),
+	}
+}
+
+func ModelWidgetToProto(widget models.Widget) *dealv1.Widget {
+	return &dealv1.Widget{
+		Id:     widget.ID,
+		DealId: widget.DealID,
+		Body:   widget.Body,
+		Script: widget.Script,
+	}
+}
+
+func ProtoDealToModel(deal *dealv1.Deals) models.Deal {
+	return models.Deal{
+		ID:            deal.GetId(),
+		SenderID:      deal.GetSenderId(),
+		RecipientID:   deal.GetRecipientId(),
+		OrganizerID:   deal.GetOrganizerId(),
+		DistributorID: deal.GetDistributorId(),
+		Commission:    deal.GetCommission(),
+		EventID:       deal.GetEventId(),
+		Status:        ProtoDealStatusToModels(deal.GetStatus()),
+	}
+}
+
+func ProtoWidgetToModel(widget *dealv1.Widget) models.Widget {
+	return models.Widget{
+		ID:     widget.GetId(),
+		DealID: widget.GetDealId(),
+		Body:   widget.GetBody(),
+		Script: widget.GetScript(),
+	}
+}

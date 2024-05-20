@@ -17,11 +17,13 @@ type DealStorage interface {
 	GetSentDeals(ctx context.Context, userID int64) ([]models.Deal, error)
 	GetProposedDeals(ctx context.Context, userID int64) ([]models.Deal, error)
 	GetDealsByStatus(ctx context.Context, userID int64, status models.DealStatus) ([]models.Deal, error)
+	GetDeal(ctx context.Context, dealID int64) (models.Deal, error)
 }
 
 type WidgetStorage interface {
 	CreateDealWidget(ctx context.Context, widget models.Widget) (int64, error)
 	DeleteDealWidget(ctx context.Context, widgetID int64) (int64, error)
+	GetDealWidget(ctx context.Context, widgetID int64) (models.Widget, error)
 }
 
 var (
@@ -127,4 +129,29 @@ func (s *DealService) GetDealsByStatus(ctx context.Context, userID int64, dealSt
 	}
 
 	return deals, nil
+}
+
+func (s *DealService) GetDealWidget(ctx context.Context, widgetID int64) (models.Widget, error) {
+
+	widget, err := s.WidgetStorage.GetDealWidget(ctx, widgetID)
+	if err != nil {
+		if errors.Is(err, storage.ErrDealWidgetNotFound) {
+			return widget, status.Error(codes.NotFound, "deal widget not found")
+		}
+		return widget, status.Error(codes.Internal, "failed to get deal widget")
+	}
+
+	return widget, nil
+}
+
+func (s *DealService) GetDeal(ctx context.Context, dealID int64) (models.Deal, error) {
+	deal, err := s.DealStorage.GetDeal(ctx, dealID)
+	if err != nil {
+		if errors.Is(err, storage.ErrDealNotFound) {
+			return deal, status.Error(codes.NotFound, "deal not found")
+		}
+		return deal, status.Error(codes.Internal, "failed to get deal")
+	}
+
+	return deal, nil
 }

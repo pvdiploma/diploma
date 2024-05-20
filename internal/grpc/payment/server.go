@@ -15,6 +15,7 @@ import (
 type Payment interface {
 	CheckAbilityToBuy(ctx context.Context, purchaseTickets []models.PurchaseTickets) (bool, error)
 	CreateTickets(ctx context.Context, purchaseTickets models.PurchaseInfo, purchaseToken string) ([]int64, error)
+	SubmitPurchase(ctx context.Context, ticketsID []int64, widgetID int64) error // refactor that parameter need to have model.Ticket instead of ids
 }
 
 type serverAPI struct {
@@ -62,7 +63,11 @@ func (s *serverAPI) PurchaseTicket(ctx context.Context, req *paymentv1.PurchaseT
 	}
 
 	// TODO: move that in SubmitPurchase later
-	
+	err = s.payment.SubmitPurchase(ctx, tikcetsID, purchaseInfo.WidgetID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to submit purchase")
+	}
+
 	return &paymentv1.PurchaseTicketResponse{
 		Id: tikcetsID,
 	}, nil
