@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	paymentapp "tn/internal/app/paymentApp"
+	eventclient "tn/internal/clients/event"
+	ticketclient "tn/internal/clients/ticket"
+
 	"tn/internal/config"
 	tokenmanager "tn/internal/utils/tokenManager"
 	"tn/pkg/logger"
@@ -35,7 +39,32 @@ func run() error {
 	singingKey := []byte(os.Getenv("SINGING_KEY"))
 
 	tm := tokenmanager.NewManager(singingKey)
-	paymentApp := paymentapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, tm)
+
+	eventClient, err := eventclient.NewClient(
+		context.Background(),
+		log,
+		cfg.Clients.Event.Addres,
+		cfg.Clients.Event.Timeout,
+		cfg.Clients.Event.RetriesCount,
+	)
+	if err != nil {
+		log.Error("Failed to create event client", logger.Err(err))
+		return err
+	}
+
+	ticketClient, err := ticketclient.NewClient(
+		context.Background(),
+		log,
+		cfg.Clients.Ticket.Addres,
+		cfg.Clients.Ticket.Timeout,
+		cfg.Clients.Ticket.RetriesCount,
+	)
+	if err != nil {
+		log.Error("Failed to create ticket client", logger.Err(err))
+		return err
+	}
+
+	paymentApp := paymentapp.NewEventApp(log, cfg.GRPC.Port, cfg.StoragePath, tm, eventClient, ticketClient)
 
 	go paymentApp.App.Run()
 	stop := make(chan os.Signal, 1)

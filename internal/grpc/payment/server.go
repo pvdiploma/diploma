@@ -61,6 +61,8 @@ func (s *serverAPI) PurchaseTicket(ctx context.Context, req *paymentv1.PurchaseT
 		return nil, status.Error(codes.Internal, "failed to create tickets")
 	}
 
+	// TODO: move that in SubmitPurchase later
+	
 	return &paymentv1.PurchaseTicketResponse{
 		Id: tikcetsID,
 	}, nil

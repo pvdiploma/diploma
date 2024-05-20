@@ -14,9 +14,12 @@ type PaymentService struct {
 	EventClient  *eventclient.Client
 }
 
-func New(log *slog.Logger) *PaymentService {
+func New(log *slog.Logger, ticketClient *ticketclient.Client, eventClient *eventclient.Client) *PaymentService {
 	return &PaymentService{
 		log: log,
+
+		TicketClient: ticketClient,
+		EventClient:  eventClient,
 	}
 }
 
